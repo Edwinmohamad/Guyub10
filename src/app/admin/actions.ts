@@ -1,14 +1,15 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { revalidatePath, updateTag } from "next/cache";
+import { createAuthorizedAdminClient } from "@/lib/auth/admin";
+import { assertImageUpload, safeUploadExtension, validateImageUpload } from "@/lib/uploads";
 
 // ══════════════════════════════════════════════════════════════
 // SURAT ACTIONS
 // ══════════════════════════════════════════════════════════════
 
 export async function updateSuratStatus(suratId: string, status: "diproses" | "selesai" | "ditolak", catatan?: string) {
-  const supabase = createAdminClient();
+  const supabase = await createAuthorizedAdminClient();
 
   const { error } = await supabase
     .from("surat")
@@ -20,13 +21,12 @@ export async function updateSuratStatus(suratId: string, status: "diproses" | "s
   revalidatePath("/admin");
   return { success: true };
 }
-
 // ══════════════════════════════════════════════════════════════
 // PENGUMUMAN ACTIONS
 // ══════════════════════════════════════════════════════════════
 
 export async function createPengumuman(formData: FormData) {
-  const supabase = createAdminClient();
+  const supabase = await createAuthorizedAdminClient();
 
   const judul = formData.get("judul") as string;
   const konten = formData.get("konten") as string;
@@ -35,7 +35,7 @@ export async function createPengumuman(formData: FormData) {
 
   if (!judul || !konten || !kategori) return { error: "Semua field harus diisi." };
 
-  const insertData: Record<string, any> = {
+  const insertData: Record<string, unknown> = {
     judul,
     konten,
     kategori,
@@ -44,13 +44,14 @@ export async function createPengumuman(formData: FormData) {
 
   const foto = formData.get("foto") as File | null;
   if (foto && foto.size > 0) {
-    const ext = foto.name.split(".").pop();
+    const uploadError = validateImageUpload(foto);
+    if (uploadError) return { error: uploadError };
+    const ext = safeUploadExtension(foto);
     const fileName = `berita_${Date.now()}.${ext}`;
     const { error: upErr } = await supabase.storage.from("berita").upload(fileName, foto);
-    if (!upErr) {
-      const { data: urlData } = supabase.storage.from("berita").getPublicUrl(fileName);
-      insertData.foto_url = urlData.publicUrl;
-    }
+    if (upErr) return { error: `Gagal mengunggah gambar: ${upErr.message}` };
+    const { data: urlData } = supabase.storage.from("berita").getPublicUrl(fileName);
+    insertData.foto_url = urlData.publicUrl;
   }
 
   const { error } = await supabase.from("pengumuman").insert(insertData);
@@ -64,7 +65,7 @@ export async function createPengumuman(formData: FormData) {
 }
 
 export async function deletePengumuman(id: string) {
-  const supabase = createAdminClient();
+  const supabase = await createAuthorizedAdminClient();
 
   const { error } = await supabase.from("pengumuman").delete().eq("id", id);
 
@@ -77,7 +78,7 @@ export async function deletePengumuman(id: string) {
 }
 
 export async function updatePengumuman(id: string, formData: FormData) {
-  const supabase = createAdminClient();
+  const supabase = await createAuthorizedAdminClient();
 
   const judul = formData.get("judul") as string;
   const konten = formData.get("konten") as string;
@@ -86,17 +87,18 @@ export async function updatePengumuman(id: string, formData: FormData) {
 
   if (!judul || !konten || !kategori) return { error: "Semua field harus diisi." };
 
-  const updateData: Record<string, any> = { judul, konten, kategori, penyelenggara };
+  const updateData: Record<string, unknown> = { judul, konten, kategori, penyelenggara };
 
   const foto = formData.get("foto") as File | null;
   if (foto && foto.size > 0) {
-    const ext = foto.name.split(".").pop();
+    const uploadError = validateImageUpload(foto);
+    if (uploadError) return { error: uploadError };
+    const ext = safeUploadExtension(foto);
     const fileName = `berita_${id}_${Date.now()}.${ext}`;
     const { error: upErr } = await supabase.storage.from("berita").upload(fileName, foto, { upsert: true });
-    if (!upErr) {
-      const { data: urlData } = supabase.storage.from("berita").getPublicUrl(fileName);
-      updateData.foto_url = urlData.publicUrl;
-    }
+    if (upErr) return { error: `Gagal mengunggah gambar: ${upErr.message}` };
+    const { data: urlData } = supabase.storage.from("berita").getPublicUrl(fileName);
+    updateData.foto_url = urlData.publicUrl;
   }
 
   const { error } = await supabase.from("pengumuman").update(updateData).eq("id", id);
@@ -114,7 +116,7 @@ export async function updatePengumuman(id: string, formData: FormData) {
 // ══════════════════════════════════════════════════════════════
 
 export async function updateLaporanStatus(laporanId: string, status: "diproses" | "selesai" | "ditolak", balasan?: string) {
-  const supabase = createAdminClient();
+  const supabase = await createAuthorizedAdminClient();
 
   const { error } = await supabase
     .from("laporan_infrastruktur")
@@ -134,7 +136,7 @@ export async function updateLaporanStatus(laporanId: string, status: "diproses" 
 
 export async function createKegiatan(formData: FormData) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createAuthorizedAdminClient();
 
     const judul = formData.get("judul") as string;
     const deskripsi = formData.get("deskripsi") as string;
@@ -147,7 +149,7 @@ export async function createKegiatan(formData: FormData) {
     const tanggalInput = formData.get("tanggal") as string; 
     const tanggal = new Date(tanggalInput).toISOString();
 
-    const insertData: Record<string, any> = {
+    const insertData: Record<string, unknown> = {
       judul,
       deskripsi,
       tanggal,
@@ -160,7 +162,8 @@ export async function createKegiatan(formData: FormData) {
 
     const foto = formData.get("foto") as File | null;
     if (foto && foto.size > 0) {
-      const ext = foto.name.split(".").pop();
+      assertImageUpload(foto);
+      const ext = safeUploadExtension(foto);
       const fileName = `kegiatan_${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("kegiatan").upload(fileName, foto);
       if (!upErr) {
@@ -176,14 +179,14 @@ export async function createKegiatan(formData: FormData) {
     revalidatePath("/admin");
     revalidatePath("/kegiatan");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Failed to create kegiatan" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Failed to create kegiatan" };
   }
 }
 
 export async function updateKegiatan(id: string, formData: FormData) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createAuthorizedAdminClient();
 
     const judul = formData.get("judul") as string;
     const deskripsi = formData.get("deskripsi") as string;
@@ -195,7 +198,7 @@ export async function updateKegiatan(id: string, formData: FormData) {
     const tanggalInput = formData.get("tanggal") as string;
     const tanggal = new Date(tanggalInput).toISOString();
 
-    const updateData: Record<string, any> = {
+    const updateData: Record<string, unknown> = {
       judul,
       deskripsi,
       tanggal,
@@ -208,7 +211,8 @@ export async function updateKegiatan(id: string, formData: FormData) {
 
     const foto = formData.get("foto") as File | null;
     if (foto && foto.size > 0) {
-      const ext = foto.name.split(".").pop();
+      assertImageUpload(foto);
+      const ext = safeUploadExtension(foto);
       const fileName = `kegiatan_${id}_${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("kegiatan").upload(fileName, foto, { upsert: true });
       if (!upErr) {
@@ -227,30 +231,30 @@ export async function updateKegiatan(id: string, formData: FormData) {
     revalidatePath("/admin");
     revalidatePath("/kegiatan");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Failed to update kegiatan" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Failed to update kegiatan" };
   }
 }
 
 export async function deleteKegiatan(id: string) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createAuthorizedAdminClient();
     const { error } = await supabase.from("kegiatan").delete().eq("id", id);
     if (error) throw error;
 
     revalidatePath("/admin");
     revalidatePath("/kegiatan");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Failed to delete kegiatan" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Failed to delete kegiatan" };
   }
 }
 
 export async function updateProfilRt(no_rt: string, formData: FormData) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createAuthorizedAdminClient();
     
-    const updateData: Record<string, any> = {
+    const updateData: Record<string, unknown> = {
       no_rt,
       ketua_nama: formData.get("ketua_nama") as string,
       sambutan: formData.get("sambutan") as string,
@@ -260,7 +264,8 @@ export async function updateProfilRt(no_rt: string, formData: FormData) {
 
     const foto = formData.get("foto") as File | null;
     if (foto && foto.size > 0) {
-      const ext = foto.name.split(".").pop();
+      assertImageUpload(foto);
+      const ext = safeUploadExtension(foto);
       const fileName = `rt_${no_rt}_${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("galeri").upload(fileName, foto);
       if (!upErr) {
@@ -282,8 +287,8 @@ export async function updateProfilRt(no_rt: string, formData: FormData) {
     revalidatePath("/admin");
     revalidatePath(`/rt/${no_rt}`);
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal update profil RT" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Gagal update profil RT" };
   }
 }
 
@@ -293,23 +298,23 @@ export async function updateProfilRt(no_rt: string, formData: FormData) {
 
 export async function updateUmkmStatus(id: string, is_approved: boolean) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createAuthorizedAdminClient();
     const { error } = await supabase.from("umkm").update({ is_approved }).eq("id", id);
     if (error) throw error;
 
     revalidatePath("/admin");
     revalidatePath("/umkm");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal mengubah status UMKM" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Gagal mengubah status UMKM" };
   }
 }
 
 export async function updateUmkmLengkap(id: string, formData: FormData) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createAuthorizedAdminClient();
     
-    const updateData: Record<string, any> = {
+    const updateData: Record<string, unknown> = {
       nama_usaha: formData.get("nama_usaha") as string,
       kategori: formData.get("kategori") as string,
       deskripsi: formData.get("deskripsi") as string,
@@ -320,7 +325,8 @@ export async function updateUmkmLengkap(id: string, formData: FormData) {
 
     const foto = formData.get("foto") as File | null;
     if (foto && foto.size > 0) {
-      const ext = foto.name.split(".").pop();
+      assertImageUpload(foto);
+      const ext = safeUploadExtension(foto);
       const fileName = `umkm_${id}_${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("umkm").upload(fileName, foto, { upsert: true });
       if (!upErr) {
@@ -335,22 +341,22 @@ export async function updateUmkmLengkap(id: string, formData: FormData) {
     revalidatePath("/admin");
     revalidatePath("/umkm");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal mengedit UMKM" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Gagal mengedit UMKM" };
   }
 }
 
 export async function deleteUmkm(id: string) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createAuthorizedAdminClient();
     const { error } = await supabase.from("umkm").delete().eq("id", id);
     if (error) throw error;
 
     revalidatePath("/admin");
     revalidatePath("/umkm");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal menghapus UMKM" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Gagal menghapus UMKM" };
   }
 }
 
@@ -360,9 +366,9 @@ export async function deleteUmkm(id: string) {
 
 export async function updateProfilRw(formData: FormData) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createAuthorizedAdminClient();
 
-    const updateData: Record<string, any> = {};
+    const updateData: Record<string, unknown> = {};
     const fields = [
       "ketua_nama", "ketua_sambutan", "ketua_wa",
       "sekretaris_nama", "sekretaris_wa",
@@ -393,7 +399,8 @@ export async function updateProfilRw(formData: FormData) {
     // Handle foto upload
     const foto = formData.get("ketua_foto") as File | null;
     if (foto && foto.size > 0) {
-      const ext = foto.name.split(".").pop();
+      assertImageUpload(foto);
+      const ext = safeUploadExtension(foto);
       const fileName = `ketua_${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("profil_rw").upload(fileName, foto, { upsert: true });
       if (!upErr) {
@@ -404,7 +411,8 @@ export async function updateProfilRw(formData: FormData) {
 
     const heroFoto = formData.get("hero_foto") as File | null;
     if (heroFoto && heroFoto.size > 0) {
-      const ext = heroFoto.name.split(".").pop();
+      assertImageUpload(heroFoto);
+      const ext = safeUploadExtension(heroFoto);
       const fileName = `hero_${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("profil_rw").upload(fileName, heroFoto, { upsert: true });
       if (!upErr) {
@@ -424,8 +432,8 @@ export async function updateProfilRw(formData: FormData) {
     revalidatePath("/profil");
     revalidatePath("/");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal update profil RW" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Gagal update profil RW" };
   }
 }
 
@@ -435,7 +443,7 @@ export async function updateProfilRw(formData: FormData) {
 
 export async function createTicker(formData: FormData) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createAuthorizedAdminClient();
     const konten = formData.get("konten") as string;
     const urutan = parseInt(formData.get("urutan") as string || "0", 10);
     
@@ -447,14 +455,14 @@ export async function createTicker(formData: FormData) {
     revalidatePath("/admin");
     revalidatePath("/");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal menambah ticker" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Gagal menambah ticker" };
   }
 }
 
 export async function updateTicker(id: string, formData: FormData) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createAuthorizedAdminClient();
     const konten = formData.get("konten") as string;
     const urutan = parseInt(formData.get("urutan") as string || "0", 10);
     const aktif = formData.get("aktif") === "true";
@@ -465,22 +473,22 @@ export async function updateTicker(id: string, formData: FormData) {
     revalidatePath("/admin");
     revalidatePath("/");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal update ticker" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Gagal update ticker" };
   }
 }
 
 export async function deleteTicker(id: string) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createAuthorizedAdminClient();
     const { error } = await supabase.from("ticker").delete().eq("id", id);
     if (error) throw error;
 
     revalidatePath("/admin");
     revalidatePath("/");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal hapus ticker" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Gagal hapus ticker" };
   }
 }
 
@@ -490,9 +498,9 @@ export async function deleteTicker(id: string) {
 
 export async function updateLembaga(id: string, formData: FormData) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createAuthorizedAdminClient();
 
-    const updateData: Record<string, any> = {};
+    const updateData: Record<string, unknown> = {};
     const fields = ["nama", "deskripsi", "ketua_nama", "ketua_wa", "sekretaris_nama", "bendahara_nama", "program_kerja", "kontak_wa"];
     for (const field of fields) {
       const val = formData.get(field);
@@ -502,7 +510,8 @@ export async function updateLembaga(id: string, formData: FormData) {
     // Handle foto upload
     const foto = formData.get("ketua_foto") as File | null;
     if (foto && foto.size > 0) {
-      const ext = foto.name.split(".").pop();
+      assertImageUpload(foto);
+      const ext = safeUploadExtension(foto);
       const fileName = `lembaga_${id}_${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("lembaga").upload(fileName, foto, { upsert: true });
       if (!upErr) {
@@ -518,8 +527,8 @@ export async function updateLembaga(id: string, formData: FormData) {
     revalidatePath("/lembaga");
     revalidatePath("/profil");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal update lembaga" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Gagal update lembaga" };
   }
 }
 
@@ -529,7 +538,7 @@ export async function updateLembaga(id: string, formData: FormData) {
 
 export async function createFasilitas(formData: FormData) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createAuthorizedAdminClient();
     const nama = formData.get("nama") as string;
     const deskripsi = formData.get("deskripsi") as string;
     const lokasi = formData.get("lokasi") as string;
@@ -539,11 +548,12 @@ export async function createFasilitas(formData: FormData) {
 
     if (!nama) return { success: false, error: "Nama fasilitas wajib diisi." };
 
-    const insertData: Record<string, any> = { nama, deskripsi, lokasi, jam_operasional, cara_peminjaman, bisa_dipinjam };
+    const insertData: Record<string, unknown> = { nama, deskripsi, lokasi, jam_operasional, cara_peminjaman, bisa_dipinjam };
 
     const foto = formData.get("foto") as File | null;
     if (foto && foto.size > 0) {
-      const ext = foto.name.split(".").pop();
+      assertImageUpload(foto);
+      const ext = safeUploadExtension(foto);
       const fileName = `fasilitas_${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("fasilitas").upload(fileName, foto);
       if (!upErr) {
@@ -558,15 +568,15 @@ export async function createFasilitas(formData: FormData) {
     revalidatePath("/admin");
     revalidatePath("/fasilitas");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal menambah fasilitas" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Gagal menambah fasilitas" };
   }
 }
 
 export async function updateFasilitas(id: string, formData: FormData) {
   try {
-    const supabase = createAdminClient();
-    const updateData: Record<string, any> = {
+    const supabase = await createAuthorizedAdminClient();
+    const updateData: Record<string, unknown> = {
       nama: formData.get("nama") as string,
       deskripsi: formData.get("deskripsi") as string,
       lokasi: formData.get("lokasi") as string,
@@ -577,7 +587,8 @@ export async function updateFasilitas(id: string, formData: FormData) {
 
     const foto = formData.get("foto") as File | null;
     if (foto && foto.size > 0) {
-      const ext = foto.name.split(".").pop();
+      assertImageUpload(foto);
+      const ext = safeUploadExtension(foto);
       const fileName = `fasilitas_${id}_${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("fasilitas").upload(fileName, foto, { upsert: true });
       if (!upErr) {
@@ -592,22 +603,22 @@ export async function updateFasilitas(id: string, formData: FormData) {
     revalidatePath("/admin");
     revalidatePath("/fasilitas");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal update fasilitas" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Gagal update fasilitas" };
   }
 }
 
 export async function deleteFasilitas(id: string) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createAuthorizedAdminClient();
     const { error } = await supabase.from("fasilitas").delete().eq("id", id);
     if (error) throw error;
 
     revalidatePath("/admin");
     revalidatePath("/fasilitas");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal hapus fasilitas" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Gagal hapus fasilitas" };
   }
 }
 
@@ -617,7 +628,7 @@ export async function deleteFasilitas(id: string) {
 
 export async function createGaleri(formData: FormData) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createAuthorizedAdminClient();
     const judul = formData.get("judul") as string;
     const deskripsi = formData.get("deskripsi") as string;
     const album = formData.get("album") as string || "umum";
@@ -626,7 +637,8 @@ export async function createGaleri(formData: FormData) {
     if (!judul) return { success: false, error: "Judul wajib diisi." };
     if (!foto || foto.size === 0) return { success: false, error: "Foto wajib diupload." };
 
-    const ext = foto.name.split(".").pop();
+    assertImageUpload(foto);
+    const ext = safeUploadExtension(foto);
     const fileName = `galeri_${Date.now()}.${ext}`;
     const { error: upErr } = await supabase.storage.from("galeri").upload(fileName, foto);
     if (upErr) return { success: false, error: "Gagal upload foto: " + upErr.message };
@@ -641,22 +653,22 @@ export async function createGaleri(formData: FormData) {
     revalidatePath("/admin");
     revalidatePath("/galeri");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal menambah foto galeri" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Gagal menambah foto galeri" };
   }
 }
 
 export async function deleteGaleri(id: string) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createAuthorizedAdminClient();
     const { error } = await supabase.from("galeri").delete().eq("id", id);
     if (error) throw error;
 
     revalidatePath("/admin");
     revalidatePath("/galeri");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal hapus foto galeri" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Gagal hapus foto galeri" };
   }
 }
 
@@ -666,7 +678,7 @@ export async function deleteGaleri(id: string) {
 
 export async function createKas(formData: FormData) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createAuthorizedAdminClient();
     const tanggal = formData.get("tanggal") as string;
     const keterangan = formData.get("keterangan") as string;
     const jenis = formData.get("jenis") as string;
@@ -685,15 +697,15 @@ export async function createKas(formData: FormData) {
     revalidatePath("/admin");
     revalidatePath("/kas");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal menambah entri kas" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Gagal menambah entri kas" };
   }
 }
 
 export async function updateKas(id: string, formData: FormData) {
   try {
-    const supabase = createAdminClient();
-    const updateData: any = {
+    const supabase = await createAuthorizedAdminClient();
+    const updateData: Record<string, unknown> = {
       tanggal: formData.get("tanggal") as string,
       keterangan: formData.get("keterangan") as string,
       jenis: formData.get("jenis") as string,
@@ -709,22 +721,22 @@ export async function updateKas(id: string, formData: FormData) {
     revalidatePath("/admin");
     revalidatePath("/kas");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal update entri kas" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Gagal update entri kas" };
   }
 }
 
 export async function deleteKas(id: string) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createAuthorizedAdminClient();
     const { error } = await supabase.from("kas").delete().eq("id", id);
     if (error) throw error;
 
     revalidatePath("/admin");
     revalidatePath("/kas");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal hapus entri kas" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Gagal hapus entri kas" };
   }
 }
 
@@ -734,7 +746,7 @@ export async function deleteKas(id: string) {
 
 export async function updateAspirasi(id: string, formData: FormData) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createAuthorizedAdminClient();
     const status = formData.get("status") as string;
     const balasan_admin = formData.get("balasan_admin") as string;
 
@@ -744,22 +756,22 @@ export async function updateAspirasi(id: string, formData: FormData) {
     revalidatePath("/admin");
     revalidatePath("/aspirasi");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal update aspirasi" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Gagal update aspirasi" };
   }
 }
 
 export async function deleteAspirasi(id: string) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createAuthorizedAdminClient();
     const { error } = await supabase.from("aspirasi").delete().eq("id", id);
     if (error) throw error;
 
     revalidatePath("/admin");
     revalidatePath("/aspirasi");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal hapus aspirasi" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Gagal hapus aspirasi" };
   }
 }
 
@@ -769,7 +781,7 @@ export async function deleteAspirasi(id: string) {
 
 export async function createWarga(formData: FormData) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createAuthorizedAdminClient();
     const insertData = {
       nik: formData.get("nik") as string,
       no_kk: formData.get("no_kk") as string,
@@ -795,36 +807,40 @@ export async function createWarga(formData: FormData) {
 
     revalidatePath("/admin");
     revalidatePath("/warga");
+    updateTag("warga-statistics");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal menambah data warga" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Gagal menambah data warga" };
   }
 }
 
-export async function bulkInsertWarga(rows: any[]) {
+export async function bulkInsertWarga(rows: Record<string, unknown>[]) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createAuthorizedAdminClient();
     const { error } = await supabase.from("warga").upsert(rows, { onConflict: 'nik' });
     if (error) throw error;
 
     revalidatePath("/admin");
     revalidatePath("/warga");
+    updateTag("warga-statistics");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal import data warga" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Gagal import data warga" };
   }
 }
 
 export async function deleteWarga(id: string) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createAuthorizedAdminClient();
     const { error } = await supabase.from("warga").delete().eq("id", id);
     if (error) throw error;
 
     revalidatePath("/admin");
     revalidatePath("/warga");
+    updateTag("warga-statistics");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal hapus data warga" };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message || "Gagal hapus data warga" };
   }
 }
+

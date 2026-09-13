@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Building, Save, Edit, X } from "lucide-react";
+import { Building } from "lucide-react";
 import { updateLembaga } from "./actions";
 
-export function LembagaEditor({ lembagaList }: { lembagaList: any[] }) {
+type LembagaRow = { id: string; nama: string; ketua_nama?: string; ketua_wa?: string; deskripsi?: string; program_kerja?: string };
+
+export function LembagaEditor({ lembagaList }: { lembagaList: LembagaRow[] }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 

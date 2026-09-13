@@ -4,7 +4,9 @@ import { useState } from "react";
 import { MessageSquare, CheckCircle, XCircle, Clock, ExternalLink } from "lucide-react";
 import { moderasiKomentar } from "../informasi/actions";
 
-export function KomentarManager({ komentarList }: { komentarList: any[] }) {
+type KomentarRow = { id: string; nama: string; email?: string; isi: string; status: string; created_at: string; pengumuman?: { judul?: string } | { judul?: string }[] };
+
+export function KomentarManager({ komentarList }: { komentarList: KomentarRow[] }) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"pending" | "disetujui" | "ditolak" | "all">("pending");
 
@@ -30,6 +32,8 @@ export function KomentarManager({ komentarList }: { komentarList: any[] }) {
       hour: "2-digit",
       minute: "2-digit",
     });
+
+  const announcementOf = (row: KomentarRow) => Array.isArray(row.pengumuman) ? row.pengumuman[0] : row.pengumuman;
 
   return (
     <div className="bg-white p-6 md:p-8 rounded-3xl border border-zinc-200 shadow-sm">
@@ -120,10 +124,10 @@ export function KomentarManager({ komentarList }: { komentarList: any[] }) {
               </div>
 
               {/* Artikel yang dikomentari */}
-              {k.pengumuman?.judul && (
+              {announcementOf(k)?.judul && (
                 <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium mb-3 bg-white/70 px-3 py-1.5 rounded-lg border border-zinc-200 w-fit">
                   <ExternalLink className="w-3 h-3" />
-                  Pada: <span className="text-zinc-700 font-bold truncate max-w-[200px]">{k.pengumuman.judul}</span>
+                  Pada: <span className="text-zinc-700 font-bold truncate max-w-[200px]">{announcementOf(k)?.judul}</span>
                 </div>
               )}
 

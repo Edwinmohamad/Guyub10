@@ -3,16 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-
-// Daftar email yang boleh masuk ke panel admin
-const ADMIN_EMAILS = ["admin@gmail.com", "fadilahikhsann@gmail.com"];
+import { isAdminEmail } from "@/lib/auth/config";
 
 export async function login(formData: FormData) {
   const email = (formData.get("email") as string).trim().toLowerCase();
   const password = formData.get("password") as string;
 
   // Blok akses jika bukan email admin
-  if (!ADMIN_EMAILS.includes(email)) {
+  if (!isAdminEmail(email)) {
     return {
       error:
         "Halaman ini khusus untuk Admin. Warga tidak perlu login untuk mengakses portal.",

@@ -4,7 +4,18 @@ import { useState } from "react";
 import { Landmark, Save, MapPin } from "lucide-react";
 import { updateProfilRw } from "./actions";
 
-export function ProfilRwEditor({ data }: { data: any }) {
+type ProfilRwData = {
+  ketua_nama?: string; ketua_wa?: string; wa_rw?: string; nomor_darurat?: string;
+  ketua_sambutan?: string; ketua_foto_url?: string; sekretaris_nama?: string;
+  sekretaris_wa?: string; bendahara_nama?: string; bendahara_wa?: string;
+  visi?: string; misi?: string[]; sejarah?: string; jumlah_warga?: number;
+  jumlah_kk?: number; jumlah_rt?: number; jumlah_masjid?: number;
+  maps_embed_url?: string; password_warga?: string; hero_foto_url?: string;
+  wa_rt1?: string; wa_rt2?: string; wa_rt3?: string; wa_rt4?: string;
+  info_penting_kegiatan?: string;
+};
+
+export function ProfilRwEditor({ data }: { data: ProfilRwData | null }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
 

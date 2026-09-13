@@ -1,102 +1,39 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight, Box, MapPin, Clock, ExternalLink } from "lucide-react";
+import { Box, Clock3, MapPin } from "lucide-react";
+import PublicPageHeader from "@/components/layout/PublicPageHeader";
 import { createClient } from "@/lib/supabase/server";
 
 export const revalidate = 60;
 
 export default async function FasilitasPage() {
   const supabase = await createClient();
-  const { data: fasilitas } = await supabase.from("fasilitas").select("*").order("created_at", { ascending: false });
+  const { data: items } = await supabase.from("fasilitas").select("id, nama, deskripsi, lokasi, jam_operasional, cara_peminjaman, bisa_dipinjam, foto_url").order("created_at", { ascending: false }).limit(50);
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <section className="relative overflow-hidden min-h-[280px]">
-        {/* Wallpaper */}
-        <div className="absolute inset-0">
-          <Image
-            src="https://images.unsplash.com/photo-1519331379826-f10be5486c6f?w=1600&q=80"
-            alt="Fasilitas Warga Background"
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-center"
-          />
-        </div>
-        {/* Dark Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/75 via-primary/65 to-[rgba(13,33,25,0.93)]" />
-
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[100px]" />
-        
-        <div className="container mx-auto px-4 max-w-6xl py-16 md:py-24 relative z-10 text-center">
-          <div className="flex items-center justify-center text-sm font-bold text-white/80 mb-6">
-            <Link href="/" className="hover:text-white transition-colors">Beranda</Link>
-            <ChevronRight className="h-4 w-4 mx-2" />
-            <span className="text-white">Fasilitas</span>
-          </div>
-
-          <div className="inline-flex items-center justify-center p-3 bg-white/10 rounded-2xl mb-6 backdrop-blur-md border border-white/20">
-            <Box className="w-8 h-8 text-white" />
-          </div>
-          
-          <h1 className="text-4xl md:text-6xl font-black text-white leading-tight mb-4" style={{ fontFamily: "var(--font-bitter)" }}>
-            Fasilitas Warga
-          </h1>
-          <p className="text-white/90 text-lg font-medium max-w-2xl mx-auto">
-            Daftar fasilitas umum dan inventaris RW 10 yang dapat digunakan dan dipinjam oleh seluruh warga.
-          </p>
+    <div className="min-h-screen bg-background">
+      <PublicPageHeader icon={Box} label="Fasilitas" title="Fasilitas warga" description="Informasi tempat dan inventaris bersama yang tersedia di lingkungan RW 10." />
+      <section className="mx-auto max-w-7xl px-5 py-10 md:px-8 md:py-14 lg:px-10">
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {items?.length ? items.map((item) => (
+            <article key={item.id} className="overflow-hidden rounded-xl border border-border bg-white">
+              <div className="relative aspect-[16/9] bg-muted">
+                {item.foto_url ? <Image src={item.foto_url} alt={item.nama} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" /> : <Box aria-hidden="true" className="absolute left-5 top-5 size-8 text-emerald-900/30" />}
+              </div>
+              <div className="p-5">
+                <div className="flex items-start justify-between gap-3"><h2 className="text-xl font-bold">{item.nama}</h2>{item.bisa_dipinjam ? <span className="text-xs font-bold text-emerald-800">Dapat dipinjam</span> : null}</div>
+                <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+                  {item.lokasi ? <p className="flex gap-2"><MapPin aria-hidden="true" className="mt-0.5 size-4 shrink-0" />{item.lokasi}</p> : null}
+                  {item.jam_operasional ? <p className="flex gap-2"><Clock3 aria-hidden="true" className="mt-0.5 size-4 shrink-0" />{item.jam_operasional}</p> : null}
+                </div>
+                {item.deskripsi ? <p className="mt-4 text-sm leading-6 text-muted-foreground">{item.deskripsi}</p> : null}
+                {item.cara_peminjaman ? <div className="mt-5 border-t border-border pt-4"><p className="text-xs font-bold uppercase tracking-wide text-emerald-900">Cara menggunakan</p><p className="mt-1 text-sm leading-6">{item.cara_peminjaman}</p></div> : null}
+                {item.bisa_dipinjam ? <Link href="/layanan" className="mt-5 inline-flex min-h-11 items-center rounded-lg bg-emerald-900 px-4 py-2 text-sm font-bold text-white">Ajukan peminjaman</Link> : null}
+              </div>
+            </article>
+          )) : <p className="md:col-span-2 lg:col-span-3 rounded-lg border border-border bg-white p-8 text-center text-muted-foreground">Belum ada data fasilitas.</p>}
         </div>
       </section>
-
-      <div className="container mx-auto px-4 max-w-6xl py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {!fasilitas || fasilitas.length === 0 ? (
-            <div className="col-span-full text-center py-12 text-muted-foreground font-medium bg-muted rounded-2xl border border-border">
-              Belum ada data fasilitas.
-            </div>
-          ) : (
-            fasilitas.map(f => (
-              <div key={f.id} className="bg-card rounded-3xl overflow-hidden border border-border shadow-sm hover:shadow-lg transition-shadow flex flex-col group">
-                <div className="h-48 overflow-hidden relative bg-muted">
-                  {f.foto_url ? (
-                    <img src={f.foto_url} alt={f.nama} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground/30"><Box className="w-12 h-12"/></div>
-                  )}
-                  {f.bisa_dipinjam && (
-                    <span className="absolute top-4 right-4 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full shadow-md">
-                      Bisa Dipinjam
-                    </span>
-                  )}
-                </div>
-                <div className="p-6 flex-1 flex flex-col">
-                  <h3 className="font-black text-xl text-foreground mb-2" style={{ fontFamily: "var(--font-bitter)" }}>{f.nama}</h3>
-                  <div className="flex flex-col gap-2 mb-4 text-xs font-bold text-muted-foreground">
-                    {f.lokasi && <div className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5"/> {f.lokasi}</div>}
-                    {f.jam_operasional && <div className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5"/> {f.jam_operasional}</div>}
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-6 flex-1 line-clamp-4">
-                    {f.deskripsi}
-                  </p>
-                  
-                  {f.cara_peminjaman && (
-                    <div className="bg-primary/5 p-3 rounded-xl border border-primary/20 mb-4">
-                      <p className="text-[10px] font-black text-primary uppercase mb-1">Cara Pinjam/Gunakan</p>
-                      <p className="text-xs text-foreground font-medium">{f.cara_peminjaman}</p>
-                    </div>
-                  )}
-
-                  {f.bisa_dipinjam && (
-                    <Link href="/layanan" className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-xl text-center text-sm hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 mt-auto">
-                      Ajukan Peminjaman <ExternalLink className="w-4 h-4"/>
-                    </Link>
-                  )}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
     </div>
   );
 }

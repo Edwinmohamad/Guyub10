@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Image from "next/image";
 import { Pencil, Trash2, Plus, X, Loader2, Megaphone } from "lucide-react";
 import { createPengumuman, deletePengumuman, updatePengumuman } from "./actions";
 
@@ -188,7 +189,7 @@ export function PengumumanManager({ pengumumanList }: { pengumumanList: Pengumum
             {pengumumanList.map((p) => (
               <div key={p.id} className="flex items-start gap-4 p-4 rounded-2xl border border-zinc-100 hover:bg-zinc-50 transition-colors group">
                 {p.foto_url && (
-                  <img src={p.foto_url} alt={p.judul} className="w-20 h-20 object-cover rounded-xl shadow-sm border border-zinc-200" />
+                  <Image src={p.foto_url} alt={p.judul} width={80} height={80} className="w-20 h-20 object-cover rounded-xl shadow-sm border border-zinc-200" />
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">

@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/alt-text -- This file uses @react-pdf/renderer Image, not an HTML img element. */
 import React from 'react';
 import { Page, Text, View, Document, StyleSheet, Image } from '@react-pdf/renderer';
 

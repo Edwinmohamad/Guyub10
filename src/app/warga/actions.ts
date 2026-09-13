@@ -2,6 +2,33 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { createWargaAccessToken, WARGA_ACCESS_COOKIE } from "@/lib/auth/warga";
+
+export async function unlockWarga(formData: FormData) {
+  const password = String(formData.get("password") ?? "");
+  const supabase = await createClient();
+  const { data } = await supabase.from("profil_rw").select("password_warga").limit(1).single();
+  const expected = data?.password_warga || process.env.WARGA_ACCESS_PASSWORD || "RW10PINTAR";
+  if (password !== expected) redirect("/warga?error=1");
+
+  const cookieStore = await cookies();
+  cookieStore.set(WARGA_ACCESS_COOKIE, createWargaAccessToken(expected), {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 60 * 60 * 8,
+    path: "/warga",
+  });
+  redirect("/warga");
+}
+
+export async function lockWarga() {
+  const cookieStore = await cookies();
+  cookieStore.delete(WARGA_ACCESS_COOKIE);
+  redirect("/warga");
+}
 
 export async function registerUmkm(formData: FormData) {
   try {
@@ -35,7 +62,7 @@ export async function registerUmkm(formData: FormData) {
 
     revalidatePath("/warga");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal mendaftarkan UMKM." };
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : "Gagal mendaftarkan UMKM." };
   }
 }

@@ -1,17 +1,15 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { validateAttachmentUpload } from "@/lib/uploads";
+import { createClient } from "@/lib/supabase/server";
 
 export async function submitSurat(formData: FormData) {
-  const supabase = await createClient();
-
   // Fitur cetak mandiri tidak memerlukan login.
   // Surat dicetak sendiri oleh warga dan disahkan langsung (fisik) ke RT/RW.
 
   // Mengambil data dari form
   const jenis = formData.get("jenis") as string;
-  const nik = formData.get("nik") as string;
   const keperluan = formData.get("keperluan") as string;
   const tujuan = formData.get("tujuan") as string;
   const lampiran = formData.get("lampiran") as File | null;
@@ -20,12 +18,10 @@ export async function submitSurat(formData: FormData) {
     return { error: "Jenis surat, tujuan, dan keperluan wajib diisi." };
   }
 
-  let lampiranUrl = null;
-  // Upload lampiran ke Supabase Storage if it exists
+  // Lampiran hanya digunakan di browser untuk dokumen cetak mandiri dan tidak disimpan.
   if (lampiran && lampiran.size > 0) {
-    const fileExt = lampiran.name.split('.').pop();
-    // Note: Kita tidak menyimpan lampiran karena warga cetak sendiri.
-    // Jika butuh penyimpanan, pastikan user_id nullable di database.
+    const uploadErrorMessage = validateAttachmentUpload(lampiran);
+    if (uploadErrorMessage) return { error: uploadErrorMessage };
   }
 
   // Generate Nomor Tiket

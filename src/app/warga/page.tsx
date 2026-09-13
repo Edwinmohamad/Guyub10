@@ -1,130 +1,31 @@
-import Image from "next/image";
-import Link from "next/link";
-import { ChevronRight, Database, Users, Activity, Lock, AlertTriangle } from "lucide-react";
+import { cookies } from "next/headers";
+import { Database, LockKeyhole, ShieldCheck } from "lucide-react";
+import PublicPageHeader from "@/components/layout/PublicPageHeader";
 import { createClient } from "@/lib/supabase/server";
+import { fetchAllWarga, fetchWargaStatisticsRows } from "@/lib/supabase/fetchAllWarga";
+import { isValidWargaAccessToken, WARGA_ACCESS_COOKIE } from "@/lib/auth/warga";
 import ClientWargaTable from "./ClientWargaTable";
+import { lockWarga, unlockWarga } from "./actions";
 
 export const revalidate = 0;
 
-export default async function WargaPage({ searchParams }: { searchParams: Promise<{ access_key?: string }> }) {
-  const resolvedParams = await searchParams;
-  const accessKey = resolvedParams.access_key;
-  const supabase = await createClient();
+type WargaRow = { id: string; nama_lengkap: string; rt: string; jenis_kelamin: string };
 
-  const { data: profilRw } = await supabase.from('profil_rw').select('password_warga').limit(1).single();
+export default async function WargaPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  const [params, cookieStore, supabase, residents] = await Promise.all([searchParams, cookies(), createClient(), fetchWargaStatisticsRows()]);
+  const { data: profile } = await supabase.from("profil_rw").select("password_warga").limit(1).single();
+  const password = profile?.password_warga || process.env.WARGA_ACCESS_PASSWORD || "RW10PINTAR";
+  const authenticated = isValidWargaAccessToken(cookieStore.get(WARGA_ACCESS_COOKIE)?.value, password);
+  const families = new Set(residents.map((item) => item.no_kk).filter(Boolean)).size;
+  const men = residents.filter((item) => item.jenis_kelamin === "L").length;
+  const women = residents.filter((item) => item.jenis_kelamin === "P").length;
+  const safeResidents = authenticated ? await fetchAllWarga("id,nama_lengkap,rt,jenis_kelamin") as WargaRow[] : [];
 
-  // Use environment variable as fallback if DB password is empty
-  const expectedKey = profilRw?.password_warga || process.env.WARGA_ACCESS_PASSWORD || "RW10PINTAR";
-  const isAuthenticated = accessKey === expectedKey; 
-
-  const { count: countTotalWarga } = await supabase.from('warga').select('*', { count: 'exact', head: true });
-  const { count: countLaki } = await supabase.from('warga').select('*', { count: 'exact', head: true }).eq('jenis_kelamin', 'L');
-  const { count: countPerempuan } = await supabase.from('warga').select('*', { count: 'exact', head: true }).eq('jenis_kelamin', 'P');
-  
-  // Hitung KK sederhana (asumsi 1 KK = 3-4 warga) -> Idealnya group by no_kk
-  const jumlahWarga = countTotalWarga || 0;
-  const estimasiKK = Math.floor(jumlahWarga / 3);
-
-  let wargaList: any[] = [];
-  if (isAuthenticated) {
-    // Ambil data dasar saja (level 2)
-    const { data } = await supabase
-      .from('warga')
-      .select('id, nama_lengkap, rt, jenis_kelamin')
-      .order('rt', { ascending: true })
-      .order('nama_lengkap', { ascending: true });
-    wargaList = data || [];
-  }
-
-  return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <section className="relative overflow-hidden min-h-[280px]">
-        {/* Wallpaper */}
-        <div className="absolute inset-0">
-          <Image
-            src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=1600&q=80"
-            alt="Database Warga Background"
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-center"
-          />
-        </div>
-        {/* Dark Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/80 via-primary/70 to-[rgba(13,33,25,0.93)]" />
-
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[100px]" />
-        
-        <div className="container mx-auto px-4 max-w-6xl py-16 md:py-24 relative z-10 text-center">
-          <div className="flex items-center justify-center text-sm font-bold text-white/80 mb-6">
-            <Link href="/" className="hover:text-white transition-colors">Beranda</Link>
-            <ChevronRight className="h-4 w-4 mx-2" />
-            <span className="text-white">Database Warga</span>
-          </div>
-
-          <div className="inline-flex items-center justify-center p-3 bg-white/10 rounded-2xl mb-6 backdrop-blur-md border border-white/20">
-            <Database className="w-8 h-8 text-white" />
-          </div>
-          
-          <h1 className="text-4xl md:text-6xl font-black text-white leading-tight mb-4" style={{ fontFamily: "var(--font-bitter)" }}>
-            Database Kependudukan
-          </h1>
-          <p className="text-white/90 text-lg font-medium max-w-2xl mx-auto mb-8">
-            Ringkasan data statistik warga RW 10 Desa Cicadas.
-          </p>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl">
-              <p className="text-xs font-bold text-white/80 uppercase mb-1">Total Warga</p>
-              <p className="text-3xl font-black text-white">{jumlahWarga}</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl">
-              <p className="text-xs font-bold text-white/80 uppercase mb-1">Estimasi KK</p>
-              <p className="text-3xl font-black text-white">{estimasiKK}</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl">
-              <p className="text-xs font-bold text-white/80 uppercase mb-1">Laki-laki</p>
-              <p className="text-3xl font-black text-white">{countLaki || 0}</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl">
-              <p className="text-xs font-bold text-white/80 uppercase mb-1">Perempuan</p>
-              <p className="text-3xl font-black text-white">{countPerempuan || 0}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <div className="container mx-auto px-4 max-w-4xl py-16 relative z-20">
-        {!isAuthenticated ? (
-          <div className="bg-card rounded-3xl p-8 md:p-12 border border-border shadow-xl text-center max-w-2xl mx-auto -mt-24">
-            <Lock className="w-16 h-16 text-muted-foreground/50 mx-auto mb-6" />
-            <h2 className="text-2xl font-black text-foreground mb-2">Akses Terbatas</h2>
-            <p className="text-muted-foreground font-medium mb-8">
-              Rincian nama warga per RT hanya dapat diakses oleh warga RW 10 menggunakan kata sandi khusus dari pengurus.
-            </p>
-            <form action="/warga" method="get" className="flex flex-col sm:flex-row gap-3 justify-center">
-              <input 
-                type="password" 
-                name="access_key" 
-                placeholder="Masukkan kata sandi akses..." 
-                className="px-6 py-3 rounded-xl border border-border bg-muted focus:bg-background focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-center sm:text-left text-foreground"
-                required
-              />
-              <button type="submit" className="bg-primary text-primary-foreground font-bold px-8 py-3 rounded-xl hover:bg-primary/90 transition-colors">
-                Buka Akses
-              </button>
-            </form>
-            <div className="mt-8 p-4 bg-highlight/10 rounded-xl border border-highlight/20 flex items-start text-left gap-3">
-              <AlertTriangle className="w-5 h-5 text-highlight shrink-0 mt-0.5" />
-              <p className="text-xs text-foreground font-medium leading-relaxed">
-                Data yang ditampilkan pada halaman ini sangat terbatas (hanya nama, L/P, dan RT) demi menjaga privasi warga. Data lengkap (NIK/KK) hanya dapat diakses oleh Admin RW melalui Dashboard.
-              </p>
-            </div>
-          </div>
-        ) : (
-          <ClientWargaTable wargaList={wargaList} />
-        )}
-      </div>
-    </div>
-  );
+  return <div className="min-h-screen bg-background">
+    <PublicPageHeader icon={Database} label="Data warga" title="Ringkasan data warga" description="Statistik kependudukan RW 10. Daftar nama dibatasi untuk warga yang memiliki kata sandi dari pengurus." />
+    <section className="mx-auto max-w-5xl px-5 py-10 md:px-8 md:py-14">
+      <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border md:grid-cols-4">{[["Total warga", residents.length], ["Keluarga", families], ["Laki-laki", men], ["Perempuan", women]].map(([label, value]) => <div key={label} className="bg-white p-5"><dt className="text-sm text-muted-foreground">{label}</dt><dd className="mt-1 text-2xl font-extrabold">{value}</dd></div>)}</dl>
+      {!authenticated ? <div className="mx-auto mt-8 max-w-xl rounded-xl border border-border bg-white p-6 md:p-8"><LockKeyhole aria-hidden="true" className="size-7 text-emerald-800" /><h2 className="mt-4 text-2xl font-bold">Akses daftar warga</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">Masukkan kata sandi khusus yang diberikan pengurus. Kata sandi tidak lagi ditempatkan di URL atau riwayat browser.</p>{params.error ? <p role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-800">Kata sandi tidak sesuai.</p> : null}<form action={unlockWarga} className="mt-5 flex flex-col gap-3 sm:flex-row"><label className="flex-1"><span className="sr-only">Kata sandi warga</span><input type="password" name="password" required autoComplete="current-password" placeholder="Kata sandi warga" className="min-h-11 w-full rounded-lg border border-input px-3 outline-none focus:border-emerald-800 focus:ring-2 focus:ring-emerald-800/20" /></label><button className="min-h-11 rounded-lg bg-emerald-900 px-5 text-sm font-bold text-white">Buka daftar</button></form><p className="mt-5 flex gap-2 text-xs leading-5 text-muted-foreground"><ShieldCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0" />Halaman hanya menampilkan nama, jenis kelamin, dan RT. NIK serta nomor KK tidak ditampilkan.</p></div> : <div className="mt-8"><div className="mb-4 flex justify-end"><form action={lockWarga}><button className="min-h-11 rounded-lg border border-input bg-white px-4 text-sm font-bold">Kunci kembali</button></form></div><ClientWargaTable wargaList={safeResidents} /></div>}
+    </section>
+  </div>;
 }

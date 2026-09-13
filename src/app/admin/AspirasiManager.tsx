@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { MessageSquare, Trash2, CheckCircle2, Clock } from "lucide-react";
+import { MessageSquare, Trash2, CheckCircle2 } from "lucide-react";
 import { updateAspirasi, deleteAspirasi } from "./actions";
 
-export function AspirasiManager({ aspirasiList }: { aspirasiList: any[] }) {
+type AspirasiRow = { id: string; created_at: string; status: string; kategori: string; nama?: string; pesan: string; balasan_admin?: string };
+
+export function AspirasiManager({ aspirasiList }: { aspirasiList: AspirasiRow[] }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -62,7 +64,7 @@ export function AspirasiManager({ aspirasiList }: { aspirasiList: any[] }) {
                   </div>
                   <h4 className="font-bold text-zinc-800 mb-1">Dari: {a.nama || 'Anonim'}</h4>
                   <p className="text-sm text-zinc-600 bg-zinc-50 p-3 rounded-xl border border-zinc-100 mt-2">
-                    "{a.pesan}"
+                    &ldquo;{a.pesan}&rdquo;
                   </p>
                   
                   {a.balasan_admin && editingId !== a.id && (

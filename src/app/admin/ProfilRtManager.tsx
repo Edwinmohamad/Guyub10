@@ -3,8 +3,11 @@
 import { useState, useTransition } from "react";
 import { updateProfilRt } from "./actions";
 import { Edit2, Users, Save, X } from "lucide-react";
+import Image from "next/image";
 
-export function ProfilRtManager({ data }: { data: any[] }) {
+type ProfilRtRow = { no_rt: string; ketua_nama?: string; ketua_foto_url?: string; kontak?: string; sambutan?: string; visi_misi?: string };
+
+export function ProfilRtManager({ data }: { data: ProfilRtRow[] }) {
   const [isPending, startTransition] = useTransition();
   const [editingRt, setEditingRt] = useState<string | null>(null);
 
@@ -36,7 +39,7 @@ export function ProfilRtManager({ data }: { data: any[] }) {
       <div className="p-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {rtList.map((no_rt) => {
-            const rtData = data.find(d => d.no_rt === no_rt) || {};
+            const rtData: ProfilRtRow = data.find(d => d.no_rt === no_rt) || { no_rt };
             const isEditing = editingRt === no_rt;
 
             return (
@@ -85,7 +88,7 @@ export function ProfilRtManager({ data }: { data: any[] }) {
                 ) : (
                   <div className="p-4 flex gap-4">
                     {rtData.ketua_foto_url ? (
-                      <img src={rtData.ketua_foto_url} alt={rtData.ketua_nama} className="w-16 h-16 rounded-xl object-cover border border-slate-200" />
+                      <Image src={rtData.ketua_foto_url} alt={rtData.ketua_nama || `Ketua RT ${no_rt}`} width={64} height={64} className="w-16 h-16 rounded-xl object-cover border border-slate-200" />
                     ) : (
                       <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center border border-slate-200">
                         <Users className="w-6 h-6 text-slate-400" />

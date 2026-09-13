@@ -3,20 +3,23 @@
 import { useState } from "react";
 import { Wrench, CheckCircle, XCircle, Clock, Search, MapPin } from "lucide-react";
 import { updateLaporanStatus } from "./actions";
+import Image from "next/image";
 
-export function LaporanManager({ laporanList }: { laporanList: any[] }) {
+type LaporanRow = { id: string; judul?: string; kategori: string; lokasi?: string; deskripsi: string; created_at: string; is_anonim?: boolean; nama_pelapor?: string; rt?: string; foto_url?: string; status: string; balasan_admin?: string };
+
+export function LaporanManager({ laporanList }: { laporanList: LaporanRow[] }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSubmitting, setIsSubmitting] = useState<string | null>(null);
   
   const filteredData = laporanList.filter((l) =>
-    l.judul.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (l.judul || l.deskripsi).toLowerCase().includes(searchTerm.toLowerCase()) ||
     l.kategori.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    l.lokasi.toLowerCase().includes(searchTerm.toLowerCase())
+    (l.lokasi || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleStatusChange = async (id: string, status: string, balasan?: string) => {
+  const handleStatusChange = async (id: string, status: "diproses" | "selesai" | "ditolak", balasan?: string) => {
     setIsSubmitting(id);
-    await updateLaporanStatus(id, status as any, balasan);
+    await updateLaporanStatus(id, status, balasan);
     setIsSubmitting(null);
   };
 
@@ -84,7 +87,7 @@ export function LaporanManager({ laporanList }: { laporanList: any[] }) {
 
                   {laporan.foto_url && (
                     <div className="mb-4">
-                      <img src={laporan.foto_url} alt="Foto Laporan" className="w-48 h-32 object-cover rounded-xl border border-zinc-200" />
+                      <Image src={laporan.foto_url} alt="Foto laporan" width={192} height={128} className="w-48 h-32 object-cover rounded-xl border border-zinc-200" />
                     </div>
                   )}
 
@@ -94,7 +97,7 @@ export function LaporanManager({ laporanList }: { laporanList: any[] }) {
                         e.preventDefault();
                         const formData = new FormData(e.currentTarget);
                         const balasan = formData.get("balasan_admin") as string;
-                        const actionStatus = (e.nativeEvent as any).submitter.name;
+                        const actionStatus = ((e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement).name as "diproses" | "ditolak";
                         handleStatusChange(laporan.id, actionStatus, balasan);
                       }}
                     >

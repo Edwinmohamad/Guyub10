@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Store, Check, X, Trash2, Edit2, Loader2, MapPin, Printer } from "lucide-react";
+import { Store, Check, X, Trash2, Edit2, MapPin, Printer } from "lucide-react";
 import { updateUmkmStatus, deleteUmkm, updateUmkmLengkap } from "./actions";
 
-export function UmkmManager({ umkmList }: { umkmList: any[] }) {
+type UmkmRow = { id: string; nama_usaha: string; kategori: string; nomor_wa: string; alamat?: string; jam_buka?: string; deskripsi: string; is_approved: boolean; nama_pemilik?: string; profiles?: { nama_lengkap?: string; rt?: string } | { nama_lengkap?: string; rt?: string }[] };
+
+export function UmkmManager({ umkmList }: { umkmList: UmkmRow[] }) {
   const [isPending, startTransition] = useTransition();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,6 +34,8 @@ export function UmkmManager({ umkmList }: { umkmList: any[] }) {
     }
   };
 
+  const profileOf = (row: UmkmRow) => Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+
   return (
     <div className="bg-white p-6 md:p-8 rounded-3xl border-2 border-zinc-200 shadow-sm">
       <div className="flex items-center gap-2 mb-6">
@@ -50,7 +54,7 @@ export function UmkmManager({ umkmList }: { umkmList: any[] }) {
             </tr>
           </thead>
           <tbody className="text-sm font-medium">
-            {umkmList.map((u: any) => (
+            {umkmList.map((u) => (
               editingId === u.id ? (
                 <tr key={u.id} className="border-b border-zinc-200 bg-zinc-50">
                   <td colSpan={4} className="p-4 md:p-6">
@@ -107,9 +111,9 @@ export function UmkmManager({ umkmList }: { umkmList: any[] }) {
                   </div>
                 </td>
                 <td className="py-4 pr-4 text-zinc-600">
-                  <div className="font-bold text-zinc-800">{u.profiles?.nama_lengkap || u.nama_pemilik || "Tanpa Nama"}</div>
+                  <div className="font-bold text-zinc-800">{profileOf(u)?.nama_lengkap || u.nama_pemilik || "Tanpa Nama"}</div>
                   <div className="flex items-center gap-1 text-xs text-zinc-500 mt-0.5">
-                    <MapPin className="w-3 h-3" /> RT {u.profiles?.rt || "-"}
+                    <MapPin className="w-3 h-3" /> RT {profileOf(u)?.rt || "-"}
                   </div>
                 </td>
                 <td className="py-4 pr-4">

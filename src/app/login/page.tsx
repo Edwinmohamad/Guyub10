@@ -1,159 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import {
-  MountainIcon,
-  ArrowLeft,
-  Loader2,
-  Eye,
-  EyeOff,
-  Mail,
-  Lock,
-  ShieldCheck,
-} from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, Eye, EyeOff, Loader2, LockKeyhole } from "lucide-react";
 import { login } from "./actions";
 
 export default function LoginPage() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = async (formData: FormData) => {
-    setIsLoading(true);
-    setErrorMessage("");
+  async function handleSubmit(formData: FormData) {
+    setLoading(true);
+    setError("");
     const result = await login(formData);
-    if (result?.error) {
-      setErrorMessage(result.error);
-      setIsLoading(false);
-    }
-  };
+    if (result?.error) { setError(result.error); setLoading(false); }
+  }
 
-  return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-background via-primary/5 to-muted p-4">
-      {/* Decorative background blobs */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/8 blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 translate-x-1/2 translate-y-1/2 rounded-full bg-accent/10 blur-3xl" />
-      </div>
-
-      {/* Back to home */}
-      <Link
-        href="/"
-        className="absolute top-6 left-6 flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors group"
-      >
-        <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-        Kembali ke Beranda
-      </Link>
-
-      <div className="w-full max-w-md relative z-10">
-        {/* Logo & Header */}
-        <div className="flex flex-col items-center mb-8">
-          <Link href="/" className="flex items-center gap-2.5 mb-5 group">
-            <div className="bg-primary p-3 rounded-2xl shadow-lg shadow-primary/20 group-hover:bg-primary/90 transition-colors">
-              <MountainIcon className="h-7 w-7 text-primary-foreground" />
-            </div>
-            <span
-              className="text-3xl font-black tracking-tight text-foreground"
-              style={{ fontFamily: "var(--font-bitter)" }}
-            >
-              Guyub<span className="text-primary">.</span>
-            </span>
-          </Link>
-
-          {/* Admin Badge */}
-          <div className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full mb-3">
-            <ShieldCheck className="h-4 w-4" />
-            <span className="text-xs font-bold uppercase tracking-wide">Panel Admin</span>
-          </div>
-
-          <h1 className="text-2xl font-black tracking-tight text-foreground">
-            Login Administrator
-          </h1>
-          <p className="text-muted-foreground mt-1.5 text-center text-sm font-medium max-w-xs">
-            Halaman ini khusus untuk pengurus RW 10. Warga tidak perlu login.
-          </p>
-        </div>
-
-        {/* Card */}
-        <div className="bg-card border border-border rounded-2xl p-7 shadow-xl">
-          {/* Error Message */}
-          {errorMessage && (
-            <div className="mb-5 p-3.5 rounded-xl bg-red-50 border border-red-200 text-destructive text-sm font-semibold">
-              ⚠️ {errorMessage}
-            </div>
-          )}
-
-          <form action={handleSubmit} className="space-y-4">
-            {/* Email */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-bold leading-none text-foreground" htmlFor="email">
-                Email Admin
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="email@admin.com"
-                  required
-                  autoComplete="email"
-                  className="flex h-12 w-full rounded-xl border-2 border-border bg-muted/40 pl-11 pr-4 text-sm focus-visible:outline-none focus-visible:border-primary focus-visible:bg-white focus-visible:ring-4 focus-visible:ring-primary/10 transition-all font-medium placeholder:text-muted-foreground/60"
-                />
-              </div>
-            </div>
-
-            {/* Password */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-bold leading-none text-foreground" htmlFor="password">
-                Kata Sandi
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Masukkan kata sandi"
-                  required
-                  autoComplete="current-password"
-                  className="flex h-12 w-full rounded-xl border-2 border-border bg-muted/40 pl-11 pr-11 text-sm focus-visible:outline-none focus-visible:border-primary focus-visible:bg-white focus-visible:ring-4 focus-visible:ring-primary/10 transition-all font-medium placeholder:text-muted-foreground/60"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  tabIndex={-1}
-                  aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-primary text-primary-foreground text-sm font-bold shadow-lg shadow-primary/25 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/30 transition-all disabled:pointer-events-none disabled:opacity-70 mt-2"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Memverifikasi...
-                </>
-              ) : (
-                "Masuk ke Panel Admin →"
-              )}
-            </button>
-          </form>
-        </div>
-
-        <p className="text-center text-xs text-muted-foreground mt-6 font-medium">
-          © {new Date().getFullYear()} Portal Digital RW 10 Desa Cicadas
-        </p>
-      </div>
-    </div>
-  );
+  return <div data-private-shell className="min-h-screen bg-[#f3f6f3] px-5 py-8"><div className="mx-auto max-w-md"><Link href="/" className="inline-flex min-h-11 items-center gap-2 py-2 text-sm font-bold text-emerald-950"><ArrowLeft aria-hidden="true" className="size-4" />Kembali ke beranda</Link><main className="mt-8 rounded-xl border border-border bg-white p-6 md:p-8"><div className="flex items-center gap-3"><Image src="/logo-rw.jpg" alt="Logo RW 10" width={52} height={52} className="size-13 rounded-full object-cover" /><div><p className="text-sm font-bold text-emerald-800">Guyub 10</p><p className="text-xs text-muted-foreground">Portal RW 10 Desa Cicadas</p></div></div><LockKeyhole aria-hidden="true" className="mt-8 size-6 text-emerald-800" /><h1 className="mt-3 text-3xl font-extrabold">Masuk sebagai pengurus</h1><p className="mt-2 text-sm leading-6 text-muted-foreground">Halaman ini hanya untuk akun pengurus yang telah diberi akses.</p>{error ? <p role="alert" className="mt-5 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-800">{error}</p> : null}<form action={handleSubmit} className="mt-6 space-y-5"><label className="block"><span className="mb-2 block text-sm font-bold">Email pengurus</span><input name="email" type="email" autoComplete="email" required className="min-h-12 w-full rounded-lg border border-input px-3 outline-none focus:border-emerald-800 focus:ring-2 focus:ring-emerald-800/20" /></label><label className="block"><span className="mb-2 block text-sm font-bold">Kata sandi</span><span className="relative block"><input name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" required className="min-h-12 w-full rounded-lg border border-input px-3 pr-12 outline-none focus:border-emerald-800 focus:ring-2 focus:ring-emerald-800/20" /><button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"} className="absolute right-1 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground"><span className="sr-only">{showPassword ? "Sembunyikan" : "Tampilkan"}</span>{showPassword ? <EyeOff aria-hidden="true" className="size-5" /> : <Eye aria-hidden="true" className="size-5" />}</button></span></label><button disabled={loading} className="inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-emerald-900 px-4 text-sm font-bold text-white disabled:opacity-60">{loading ? <><Loader2 aria-hidden="true" className="mr-2 size-4 animate-spin" />Memverifikasi</> : "Masuk ke admin"}</button></form></main></div></div>;
 }

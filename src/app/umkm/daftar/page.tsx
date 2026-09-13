@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight, Store, CheckCircle2, ArrowRight } from "lucide-react";
+import { Store, CheckCircle2, ArrowRight } from "lucide-react";
+import PublicPageHeader from "@/components/layout/PublicPageHeader";
 import { submitUmkm } from "../actions";
 
 export default function UMKMRegistrationPage() {
@@ -63,44 +63,11 @@ export default function UMKMRegistrationPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden min-h-[240px]">
-        <div className="absolute inset-0">
-          <Image
-            src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=1600&q=80"
-            alt="Daftar UMKM Background"
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-center"
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/80 via-primary/70 to-[rgba(13,33,25,0.93)]" />
-        <div className="container mx-auto px-4 max-w-3xl py-16 relative z-10">
-          <div className="flex items-center text-sm font-bold text-white/80 mb-6">
-            <Link href="/" className="hover:text-white transition-colors">Beranda</Link>
-            <ChevronRight className="h-4 w-4 mx-2" />
-            <Link href="/umkm" className="hover:text-white transition-colors">UMKM Warga</Link>
-            <ChevronRight className="h-4 w-4 mx-2" />
-            <span className="text-white">Daftar Usaha</span>
-          </div>
-          <div className="flex items-center gap-4 mb-3">
-            <div className="bg-white/10 p-3 rounded-2xl border border-white/20 backdrop-blur-sm">
-              <Store className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-3xl md:text-5xl font-black text-white leading-tight" style={{ fontFamily: "var(--font-bitter)" }}>
-              Daftarkan Usaha
-            </h1>
-          </div>
-          <p className="text-white/90 text-lg font-medium">
-            Isi formulir di bawah ini untuk mempromosikan usaha, warung, atau jasa Anda ke seluruh warga RW 10 secara gratis.
-          </p>
-        </div>
-      </section>
+      <PublicPageHeader icon={Store} label="Daftar UMKM" title="Daftarkan usaha warga" description="Isi data usaha, warung, atau jasa. Pengurus akan meninjau pendaftaran sebelum ditampilkan di direktori." action={{ href: "/umkm", label: "Lihat direktori" }} />
 
       {/* Registration Form */}
-      <section className="container mx-auto px-4 max-w-3xl py-12">
-        <div className="bg-white rounded-2xl p-6 md:p-10 border border-border shadow-md">
+      <section className="mx-auto w-full max-w-3xl px-5 py-10 md:px-8 md:py-14">
+        <div className="rounded-xl border border-border bg-white p-5 md:p-8">
           
           {errorMessage && (
             <div className="mb-6 p-4 rounded-xl bg-red-50 border-2 border-red-200 text-red-600 text-sm font-bold text-center">

@@ -1,5 +1,4 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
 
 export const revalidate = 0;
 

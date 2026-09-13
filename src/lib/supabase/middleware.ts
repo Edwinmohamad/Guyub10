@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { isAdminEmail } from '@/lib/auth/config'
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -44,10 +45,9 @@ export async function updateSession(request: NextRequest) {
   // Middleware hanya refresh session
 
   // Redirect logged-in admin away from login page → ke /admin
-  const ADMIN_EMAILS = ['admin@gmail.com', 'fadilahikhsann@gmail.com']
   if (request.nextUrl.pathname.startsWith('/login') && user) {
     const url = request.nextUrl.clone()
-    url.pathname = ADMIN_EMAILS.includes(user.email?.toLowerCase() ?? '') ? '/admin' : '/'
+    url.pathname = isAdminEmail(user.email) ? '/admin' : '/'
     return NextResponse.redirect(url)
   }
 

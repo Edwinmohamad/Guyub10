@@ -6,7 +6,7 @@ export default async function AspirasiList() {
 
   const { data: aspirasiList } = await supabase
     .from("aspirasi")
-    .select("*")
+    .select("id, nama, kategori, pesan, status, balasan_admin, created_at")
     .order("created_at", { ascending: false })
     .limit(10);
 
@@ -30,7 +30,7 @@ export default async function AspirasiList() {
           </div>
           
           <p className="font-bold text-foreground text-sm mb-1">{a.nama}</p>
-          <p className="text-muted-foreground text-sm mb-3">"{a.pesan}"</p>
+          <p className="text-muted-foreground text-sm mb-3">&ldquo;{a.pesan}&rdquo;</p>
           
           <div className="flex items-center gap-2">
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase border ${

@@ -1,10 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { DollarSign, Plus, Trash2, Edit2, X, TrendingUp, TrendingDown } from "lucide-react";
+import { DollarSign, Plus, Trash2, Edit2, TrendingUp, TrendingDown } from "lucide-react";
 import { createKas, updateKas, deleteKas } from "./actions";
 
-export function KasManager({ kasList }: { kasList: any[] }) {
+type KasRow = { id: string; tanggal: string; jenis: string; jumlah: number; kategori: string; entitas_type: string; entitas_id: string; keterangan: string };
+
+function FormFields({ data }: { data?: KasRow }) {
+  return <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div className="space-y-1"><label className="text-xs font-bold">Tanggal</label><input type="date" name="tanggal" defaultValue={data?.tanggal} required className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm" /></div>
+    <div className="space-y-1"><label className="text-xs font-bold">Jenis</label><select name="jenis" defaultValue={data?.jenis || "masuk"} required className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm font-bold"><option value="masuk">Pemasukan (Masuk)</option><option value="keluar">Pengeluaran (Keluar)</option></select></div>
+    <div className="space-y-1"><label className="text-xs font-bold">Nominal (Rp)</label><input type="number" name="jumlah" defaultValue={data?.jumlah} required min="1" className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm font-mono" /></div>
+    <div className="space-y-1"><label className="text-xs font-bold">Kategori</label><input type="text" name="kategori" defaultValue={data?.kategori || "Iuran Warga"} required className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm" /></div>
+    <div className="space-y-1"><label className="text-xs font-bold">Milik Entitas</label><select name="entitas_type" defaultValue={data?.entitas_type || "RW"} required className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm font-bold"><option value="RW">Kas RW Utama</option><option value="RT">Kas RT Khusus</option><option value="Lembaga">Kas Lembaga Khusus</option></select></div>
+    <div className="space-y-1"><label className="text-xs font-bold">ID Entitas (Jika RT/Lembaga)</label><input type="text" name="entitas_id" defaultValue={data?.entitas_id || "RW"} required placeholder="Contoh: 01, PKK, RW" className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm" /></div>
+    <div className="md:col-span-2 space-y-1"><label className="text-xs font-bold">Keterangan / Uraian</label><input type="text" name="keterangan" defaultValue={data?.keterangan} required placeholder="Contoh: Iuran kebersihan RT 01 bulan Mei" className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm" /></div>
+  </div>;
+}
+
+export function KasManager({ kasList }: { kasList: KasRow[] }) {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,46 +53,6 @@ export function KasManager({ kasList }: { kasList: any[] }) {
   const saldo = totalMasuk - totalKeluar;
 
   const formatRp = (num: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
-
-  const FormFields = ({ data }: { data?: any }) => (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div className="space-y-1">
-        <label className="text-xs font-bold">Tanggal</label>
-        <input type="date" name="tanggal" defaultValue={data?.tanggal} required className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm" />
-      </div>
-      <div className="space-y-1">
-        <label className="text-xs font-bold">Jenis</label>
-        <select name="jenis" defaultValue={data?.jenis || 'masuk'} required className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm font-bold">
-          <option value="masuk">Pemasukan (Masuk)</option>
-          <option value="keluar">Pengeluaran (Keluar)</option>
-        </select>
-      </div>
-      <div className="space-y-1">
-        <label className="text-xs font-bold">Nominal (Rp)</label>
-        <input type="number" name="jumlah" defaultValue={data?.jumlah} required min="1" className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm font-mono" />
-      </div>
-      <div className="space-y-1">
-        <label className="text-xs font-bold">Kategori</label>
-        <input type="text" name="kategori" defaultValue={data?.kategori || 'Iuran Warga'} required className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm" />
-      </div>
-      <div className="space-y-1">
-        <label className="text-xs font-bold">Milik Entitas</label>
-        <select name="entitas_type" defaultValue={data?.entitas_type || 'RW'} required className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm font-bold">
-          <option value="RW">Kas RW Utama</option>
-          <option value="RT">Kas RT Khusus</option>
-          <option value="Lembaga">Kas Lembaga Khusus</option>
-        </select>
-      </div>
-      <div className="space-y-1">
-        <label className="text-xs font-bold">ID Entitas (Jika RT/Lembaga)</label>
-        <input type="text" name="entitas_id" defaultValue={data?.entitas_id || 'RW'} required placeholder="Contoh: 01, PKK, RW" className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm" />
-      </div>
-      <div className="md:col-span-2 space-y-1">
-        <label className="text-xs font-bold">Keterangan / Uraian</label>
-        <input type="text" name="keterangan" defaultValue={data?.keterangan} required placeholder="Contoh: Iuran kebersihan RT 01 bulan Mei" className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm" />
-      </div>
-    </div>
-  );
 
   return (
     <div className="space-y-6">

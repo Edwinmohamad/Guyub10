@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Type, Plus, Trash2, Edit2, Check, X } from "lucide-react";
 import { createTicker, updateTicker, deleteTicker } from "./actions";
 
-export function TickerManager({ tickerList }: { tickerList: any[] }) {
+type TickerRow = { id: string; konten: string; urutan: number; aktif: boolean };
+
+export function TickerManager({ tickerList }: { tickerList: TickerRow[] }) {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);

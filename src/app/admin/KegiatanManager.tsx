@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Edit2, Trash2, Calendar, MapPin, Clock } from "lucide-react";
+import { Plus, Edit2, Trash2, Calendar, MapPin } from "lucide-react";
+import Image from "next/image";
 import { createKegiatan, updateKegiatan, deleteKegiatan } from "./actions";
 
 interface Kegiatan {
@@ -107,7 +108,7 @@ export default function KegiatanManager({ data }: { data: Kegiatan[] }) {
                   )}
                 </div>
                 {item.foto_url && (
-                  <img src={item.foto_url} alt={item.judul} className="w-full h-32 md:w-32 object-cover rounded-lg mb-3 md:mb-0 md:float-left md:mr-4 border border-border" />
+                  <Image src={item.foto_url} alt={item.judul} width={320} height={128} className="w-full h-32 md:w-32 object-cover rounded-lg mb-3 md:mb-0 md:float-left md:mr-4 border border-border" />
                 )}
                 <h3 className="font-bold text-foreground">{item.judul}</h3>
                 <p className="text-sm text-muted-foreground line-clamp-1 mb-2">{item.deskripsi}</p>

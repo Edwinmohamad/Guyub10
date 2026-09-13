@@ -1,3 +1,6 @@
+import "server-only";
+
+import { unstable_cache } from "next/cache";
 import { createAdminClient } from './admin';
 
 type WargaSelectFields = string;
@@ -38,3 +41,9 @@ export async function fetchAllWarga(fields: WargaSelectFields, rtFilter?: string
 
   return allData;
 }
+
+export const fetchWargaStatisticsRows = unstable_cache(
+  () => fetchAllWarga("rt,jenis_kelamin,tanggal_lahir,no_kk"),
+  ["warga-statistics-rows"],
+  { revalidate: 300, tags: ["warga-statistics"] },
+);

@@ -20,7 +20,7 @@ export default function AdminTabs({ menuItems, activeTab }: AdminTabsProps) {
     <div className="bg-white border-b border-zinc-200 sticky top-0 z-10 -mx-4 px-4 md:mx-0 md:px-0">
       <div className="flex overflow-x-auto hide-scrollbar gap-2 py-3">
         {menuItems.map((item) => {
-          const IconComponent = (Icons as any)[item.icon] as LucideIcon | undefined;
+          const IconComponent = (Icons as unknown as Record<string, LucideIcon>)[item.icon];
           const isActive = activeTab === item.key;
           
           return (

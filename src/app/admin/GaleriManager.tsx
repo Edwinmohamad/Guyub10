@@ -3,8 +3,11 @@
 import { useState } from "react";
 import { Image as ImageIcon, Plus, Trash2 } from "lucide-react";
 import { createGaleri, deleteGaleri } from "./actions";
+import Image from "next/image";
 
-export function GaleriManager({ galeriList }: { galeriList: any[] }) {
+type GaleriRow = { id: string; foto_url: string; judul: string; album?: string };
+
+export function GaleriManager({ galeriList }: { galeriList: GaleriRow[] }) {
   const [isAdding, setIsAdding] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -84,7 +87,7 @@ export function GaleriManager({ galeriList }: { galeriList: any[] }) {
         ) : (
           galeriList.map((g) => (
             <div key={g.id} className="group relative rounded-2xl overflow-hidden border border-zinc-200 aspect-square bg-zinc-100">
-              <img src={g.foto_url} alt={g.judul} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              <Image src={g.foto_url} alt={g.judul} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
                 <span className="text-[10px] bg-primary text-white px-2 py-0.5 rounded uppercase font-bold w-fit mb-1">{g.album}</span>
                 <h4 className="text-white font-bold text-sm line-clamp-1">{g.judul}</h4>

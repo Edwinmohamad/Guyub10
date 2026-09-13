@@ -3,7 +3,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: var(--font-jakarta), var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -92,14 +92,14 @@
 @layer base {
   :root {
     /* === Civic Portal Palette (Green/Terracotta) === */
-    --background: #f8fafc;
-    --foreground: #2B2622;
+    --background: #f8faf8;
+    --foreground: #17201b;
 
-    --card: #FFFBF5;
-    --card-foreground: #2B2622;
+    --card: #ffffff;
+    --card-foreground: #17201b;
 
-    --popover: #FFFBF5;
-    --popover-foreground: #2B2622;
+    --popover: #ffffff;
+    --popover-foreground: #17201b;
 
     /* Primary: Hijau Tua */
     --primary: #1B4332;
@@ -110,11 +110,11 @@
     --secondary-foreground: #F7F3E9;
 
     /* Background Section */
-    --muted: #F7F3E9;
-    --muted-foreground: #64748b;
+    --muted: #eef3ef;
+    --muted-foreground: #526159;
 
     /* Accent: Terracotta */
-    --accent: #C9622B;
+    --accent: #1B4332;
     --accent-foreground: #ffffff;
 
     /* Highlight: Emas */
@@ -127,11 +127,11 @@
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
 
-    --border: #e2e8f0;
-    --input: #e2e8f0;
+    --border: #dce5df;
+    --input: #cbd8cf;
     --ring: rgba(27, 67, 50, 0.4);
 
-    --radius: 0.625rem;
+    --radius: 0.75rem;
   }
 }
 
@@ -145,9 +145,25 @@
     -webkit-font-smoothing: antialiased;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-bitter), Georgia, serif;
-    letter-spacing: -0.01em;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.025em;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+body:has([data-private-shell]) > header,
+body:has([data-private-shell]) > footer {
+  display: none;
 }
 
 @layer utilities {

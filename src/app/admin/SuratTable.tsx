@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Image from "next/image";
 import { CheckCircle, XCircle, Clock, Loader2, Printer } from "lucide-react";
 import { updateSuratStatus } from "./actions";
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 
 interface Surat {
   id: string;
@@ -38,6 +38,7 @@ export function SuratTable({ suratList, ketuaNama = "Ketua RW" }: { suratList: S
 
   const handleGeneratePdf = async (surat: Surat) => {
     try {
+      const { PDFDocument, StandardFonts } = await import("pdf-lib");
       const profile = getProfile(surat.profiles);
       const doc = await PDFDocument.create();
       const page = doc.addPage([595.28, 841.89]); // A4 Size
@@ -82,7 +83,7 @@ export function SuratTable({ suratList, ketuaNama = "Ketua RW" }: { suratList: S
       page.drawText(`( ${ketuaNama} )`, { x: 410, y: currentY - 130, size: fontSize, font: timesRomanBold });
 
       const pdfBytes = await doc.save();
-      const blob = new Blob([pdfBytes as any], { type: "application/pdf" });
+      const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -90,6 +91,7 @@ export function SuratTable({ suratList, ketuaNama = "Ketua RW" }: { suratList: S
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
       alert("Gagal mencetak PDF.");
@@ -229,7 +231,7 @@ export function SuratTable({ suratList, ketuaNama = "Ketua RW" }: { suratList: S
               {viewUrl.toLowerCase().endsWith('.pdf') ? (
                 <iframe src={viewUrl} className="w-full h-[70vh] rounded-xl border-2 border-zinc-200" title="PDF Document" />
               ) : (
-                <img src={viewUrl} alt="Lampiran" className="max-w-full max-h-[70vh] object-contain rounded-xl border-2 border-zinc-200" />
+                <Image src={viewUrl} alt="Lampiran" width={1200} height={800} className="max-w-full max-h-[70vh] object-contain rounded-xl border-2 border-zinc-200" />
               )}
             </div>
           </div>

@@ -4,7 +4,23 @@ import { useState } from "react";
 import { Building2, Plus, Trash2, Edit2, X } from "lucide-react";
 import { createFasilitas, updateFasilitas, deleteFasilitas } from "./actions";
 
-export function FasilitasManager({ fasilitasList }: { fasilitasList: any[] }) {
+type FasilitasRow = { id: string; nama: string; lokasi?: string; jam_operasional?: string; foto_url?: string; deskripsi?: string; cara_peminjaman?: string; bisa_dipinjam: boolean };
+
+function FormFields({ data }: { data?: FasilitasRow }) {
+  return <>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="space-y-1"><label className="text-xs font-bold">Nama Fasilitas</label><input type="text" name="nama" defaultValue={data?.nama} required className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm" /></div>
+      <div className="space-y-1"><label className="text-xs font-bold">Lokasi</label><input type="text" name="lokasi" defaultValue={data?.lokasi} className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm" /></div>
+      <div className="space-y-1"><label className="text-xs font-bold">Jam Operasional</label><input type="text" name="jam_operasional" defaultValue={data?.jam_operasional} className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm" /></div>
+      <div className="space-y-1"><label className="text-xs font-bold">Foto (Opsional)</label><input type="file" name="foto" accept="image/*" className="w-full p-2 rounded-lg border border-zinc-300 text-sm bg-white" /></div>
+    </div>
+    <div className="space-y-1 mt-4"><label className="text-xs font-bold">Deskripsi</label><textarea name="deskripsi" defaultValue={data?.deskripsi} rows={2} className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm" /></div>
+    <div className="space-y-1 mt-4"><label className="text-xs font-bold">Cara Peminjaman</label><textarea name="cara_peminjaman" defaultValue={data?.cara_peminjaman} rows={2} className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm" /></div>
+    <div className="mt-4 flex items-center gap-2"><input id={`bisa-${data?.id ?? "baru"}`} type="checkbox" name="bisa_dipinjam" value="true" defaultChecked={data?.bisa_dipinjam ?? true} className="w-4 h-4 rounded" /><label htmlFor={`bisa-${data?.id ?? "baru"}`} className="text-sm font-bold">Fasilitas bisa dipinjam oleh warga</label></div>
+  </>;
+}
+
+export function FasilitasManager({ fasilitasList }: { fasilitasList: FasilitasRow[] }) {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,41 +48,6 @@ export function FasilitasManager({ fasilitasList }: { fasilitasList: any[] }) {
       await deleteFasilitas(id);
     }
   };
-
-  const FormFields = ({ data }: { data?: any }) => (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-1">
-          <label className="text-xs font-bold">Nama Fasilitas</label>
-          <input type="text" name="nama" defaultValue={data?.nama} required className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm" />
-        </div>
-        <div className="space-y-1">
-          <label className="text-xs font-bold">Lokasi</label>
-          <input type="text" name="lokasi" defaultValue={data?.lokasi} className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm" />
-        </div>
-        <div className="space-y-1">
-          <label className="text-xs font-bold">Jam Operasional</label>
-          <input type="text" name="jam_operasional" defaultValue={data?.jam_operasional} className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm" />
-        </div>
-        <div className="space-y-1">
-          <label className="text-xs font-bold">Foto (Opsional)</label>
-          <input type="file" name="foto" accept="image/*" className="w-full p-2 rounded-lg border border-zinc-300 text-sm bg-white" />
-        </div>
-      </div>
-      <div className="space-y-1 mt-4">
-        <label className="text-xs font-bold">Deskripsi</label>
-        <textarea name="deskripsi" defaultValue={data?.deskripsi} rows={2} className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm"></textarea>
-      </div>
-      <div className="space-y-1 mt-4">
-        <label className="text-xs font-bold">Cara Peminjaman</label>
-        <textarea name="cara_peminjaman" defaultValue={data?.cara_peminjaman} rows={2} className="w-full p-2.5 rounded-lg border border-zinc-300 text-sm"></textarea>
-      </div>
-      <div className="mt-4 flex items-center gap-2">
-        <input type="checkbox" name="bisa_dipinjam" value="true" defaultChecked={data?.bisa_dipinjam ?? true} className="w-4 h-4 rounded" />
-        <label className="text-sm font-bold">Fasilitas bisa dipinjam oleh warga</label>
-      </div>
-    </>
-  );
 
   return (
     <div className="bg-white p-6 md:p-8 rounded-3xl border border-zinc-200 shadow-sm">

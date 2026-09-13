@@ -1,17 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Database, Plus, Trash2, Download, Upload, Search, FileUp } from "lucide-react";
+import { Database, Plus, Trash2, Download, Search, FileUp } from "lucide-react";
 import { createWarga, deleteWarga, bulkInsertWarga } from "./actions";
-import * as XLSX from 'xlsx';
 
-export function WargaManager({ wargaList }: { wargaList: any[] }) {
+type WargaRow = { id: string; nik: string; no_kk?: string; nama_lengkap: string; tempat_lahir?: string; tanggal_lahir?: string; jenis_kelamin?: string; agama?: string; status_perkawinan?: string; pekerjaan?: string; pendidikan?: string; rt: string; alamat?: string; status_warga?: string };
+type WargaImportRow = Record<string, unknown> & { nik: string; no_kk: string; nama_lengkap: string; tempat_lahir: string; jenis_kelamin: string; agama: string; rt: string; alamat: string; tanggal_lahir: string | null; status_perkawinan: string; pekerjaan: string; pendidikan: string };
+
+export function WargaManager({ wargaList }: { wargaList: WargaRow[] }) {
   const [isAdding, setIsAdding] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRt, setFilterRt] = useState("all");
   const [isImporting, setIsImporting] = useState(false);
-  const [previewData, setPreviewData] = useState<any[] | null>(null);
+  const [previewData, setPreviewData] = useState<WargaImportRow[] | null>(null);
 
   const filteredWarga = wargaList.filter(w => {
     const matchesSearch = w.nama_lengkap.toLowerCase().includes(searchTerm.toLowerCase()) || w.nik.includes(searchTerm);
@@ -42,16 +44,17 @@ export function WargaManager({ wargaList }: { wargaList: any[] }) {
     const reader = new FileReader();
     reader.onload = async (evt) => {
       try {
+        const XLSX = await import("xlsx");
         const bstr = evt.target?.result;
         // raw: true preserves numbers as-is, cellText: true to get text representation
         const wb = XLSX.read(bstr, { type: 'binary', cellText: true, cellDates: true });
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
         // defval: "" so empty cells become empty strings, raw: false so numbers come as text
-        const data = XLSX.utils.sheet_to_json(ws, { raw: false, defval: "" });
+        const data = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { raw: false, defval: "" });
 
         // Helper: convert any number-like value to a clean integer string
-        const toIdStr = (val: any): string => {
+        const toIdStr = (val: unknown): string => {
           if (!val && val !== 0) return "";
           const s = String(val).trim();
           // Handle scientific notation e.g. "3.2010245e+15"
@@ -67,7 +70,7 @@ export function WargaManager({ wargaList }: { wargaList: any[] }) {
         };
 
         // Helper: convert dates like "23-11-2002" or JS Dates into "YYYY-MM-DD"
-        const parseDate = (val: any): string | null => {
+        const parseDate = (val: unknown): string | null => {
           if (!val) return null;
           if (val instanceof Date) {
             if (isNaN(val.getTime())) return null;
@@ -118,7 +121,7 @@ export function WargaManager({ wargaList }: { wargaList: any[] }) {
         };
         
         if (data.length > 0) {
-          const rows = data.map((d: any) => ({
+          const rows: WargaImportRow[] = data.map((d) => ({
             nik: toIdStr(d["NIK"] || d["nik"] || "").slice(0, 16),
             no_kk: toIdStr(d["No KK"] || d["no_kk"] || "").slice(0, 20),
             nama_lengkap: String(d["Nama Lengkap"] || d["nama_lengkap"] || "Tanpa Nama").trim(),
@@ -137,7 +140,7 @@ export function WargaManager({ wargaList }: { wargaList: any[] }) {
           const validRows = rows.filter(r => r.nik.length >= 10 && r.nama_lengkap);
           
           // Deduplicate by NIK (keep the last occurrence)
-          const uniqueRowsMap = new Map();
+          const uniqueRowsMap = new Map<string, WargaImportRow>();
           for (const row of validRows) {
             uniqueRowsMap.set(row.nik, row);
           }
@@ -163,7 +166,7 @@ export function WargaManager({ wargaList }: { wargaList: any[] }) {
         } else {
           alert("Data Excel kosong.");
         }
-      } catch (err) {
+      } catch {
         alert("Gagal membaca file Excel. Pastikan formatnya benar.");
       } finally {
         setIsImporting(false);
@@ -187,12 +190,13 @@ export function WargaManager({ wargaList }: { wargaList: any[] }) {
     setIsSubmitting(false);
   };
 
-  const downloadTemplate = () => {
+  const downloadTemplate = async () => {
+    const XLSX = await import("xlsx");
     const headers = ["NIK", "No KK", "Nama Lengkap", "Tempat Lahir", "Tanggal Lahir", "L/P", "Agama", "Status", "Pekerjaan", "Pendidikan", "RT", "Alamat"];
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([
       headers,
-      ["3201020304050001", "3201020304050000", "John Doe", "Jakarta", "1990-01-01", "L", "Islam", "Kawin", "Wiraswasta", "S1", "001", "Jl. Contoh No. 123"]
+      ["3201020304050001", "3201020304050000", "Ahmad Saepudin", "Bogor", "1990-01-01", "L", "Islam", "Kawin", "Wiraswasta", "S1", "001", "Jl. Cicadas"]
     ]);
     XLSX.utils.book_append_sheet(wb, ws, "Template");
     XLSX.writeFile(wb, "Template_Import_Warga.xlsx");

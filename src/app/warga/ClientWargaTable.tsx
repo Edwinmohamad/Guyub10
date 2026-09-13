@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { Search } from "lucide-react";
 
-export default function ClientWargaTable({ wargaList }: { wargaList: any[] }) {
+type WargaRow = { id: string; nama_lengkap: string; rt: string; jenis_kelamin: string };
+
+export default function ClientWargaTable({ wargaList }: { wargaList: WargaRow[] }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRt, setFilterRt] = useState("all");
 

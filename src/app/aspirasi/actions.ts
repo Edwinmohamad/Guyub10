@@ -6,12 +6,15 @@ import { revalidatePath } from "next/cache";
 export async function submitAspirasi(formData: FormData) {
   const supabase = await createClient();
 
-  const nama = (formData.get("nama") as string) || "Anonim";
-  const kategori = formData.get("kategori") as string;
-  const pesan = formData.get("pesan") as string;
+  const nama = String(formData.get("nama") || "Anonim").trim();
+  const kategori = String(formData.get("kategori") || "").trim();
+  const pesan = String(formData.get("pesan") || "").trim();
 
   if (!kategori || !pesan) {
     return { error: "Kategori dan isi pesan wajib diisi." };
+  }
+  if (nama.length > 80 || kategori.length > 60 || pesan.length > 2000) {
+    return { error: "Isi aspirasi melebihi batas panjang yang diizinkan." };
   }
 
   const { error } = await supabase

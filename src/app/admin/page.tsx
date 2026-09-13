@@ -1,26 +1,29 @@
-import { createAdminClient } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
-import { 
-  FileText, Users, Store, Megaphone, Calendar, 
-  Settings, Image, DollarSign, MessageSquare, 
-  Database, Type, Building, Landmark, Wrench
+import {
+  FileText,
+  Megaphone,
+  MessageSquare,
+  Store,
+  Users,
+  Wrench,
 } from "lucide-react";
-import { SuratTable } from "./SuratTable";
-import { PengumumanManager } from "./PengumumanManager";
-import KegiatanManager from "./KegiatanManager";
-import { UmkmManager } from "./UmkmManager";
-import { ProfilRwEditor } from "./ProfilRwEditor";
-import { ProfilRtManager } from "./ProfilRtManager";
-import { TickerManager } from "./TickerManager";
-import { LembagaEditor } from "./LembagaEditor";
+
+import { createAuthorizedAdminClient } from "@/lib/auth/admin";
+import AdminTabs from "./AdminTabs";
+import { AspirasiManager } from "./AspirasiManager";
 import { FasilitasManager } from "./FasilitasManager";
 import { GaleriManager } from "./GaleriManager";
+import KegiatanManager from "./KegiatanManager";
 import { KasManager } from "./KasManager";
-import { AspirasiManager } from "./AspirasiManager";
-import { WargaManager } from "./WargaManager";
-import { LaporanManager } from "./LaporanManager";
 import { KomentarManager } from "./KomentarManager";
-import AdminTabs from "./AdminTabs";
+import { LaporanManager } from "./LaporanManager";
+import { LembagaEditor } from "./LembagaEditor";
+import { PengumumanManager } from "./PengumumanManager";
+import { ProfilRtManager } from "./ProfilRtManager";
+import { ProfilRwEditor } from "./ProfilRwEditor";
+import { SuratTable } from "./SuratTable";
+import { TickerManager } from "./TickerManager";
+import { UmkmManager } from "./UmkmManager";
+import { WargaManager } from "./WargaManager";
 
 export const revalidate = 0;
 
@@ -41,204 +44,154 @@ const MENU_ITEMS = [
   { key: "aspirasi", label: "Aspirasi", icon: "MessageSquare" },
   { key: "warga", label: "Database Warga", icon: "Database" },
   { key: "komentar", label: "Komentar Berita", icon: "MessageSquare" },
-];
+] as const;
+
+async function Overview() {
+  const supabase = await createAuthorizedAdminClient();
+  const [
+    { count: countSurat },
+    { count: countUmkm },
+    { count: countPengumuman },
+    { count: countAspirasi },
+    { count: countWarga },
+    { count: countLaporan },
+  ] = await Promise.all([
+    supabase.from("surat").select("id", { count: "exact", head: true }).eq("status", "pending"),
+    supabase.from("umkm").select("id", { count: "exact", head: true }),
+    supabase.from("pengumuman").select("id", { count: "exact", head: true }),
+    supabase.from("aspirasi").select("id", { count: "exact", head: true }).eq("status", "masuk"),
+    supabase.from("warga").select("id", { count: "exact", head: true }),
+    supabase.from("laporan_infrastruktur").select("id", { count: "exact", head: true }).eq("status", "masuk"),
+  ]);
+
+  const stats = [
+    { icon: Users, label: "Total Warga", value: countWarga ?? 0, unit: "jiwa", tone: "bg-emerald-50 text-emerald-800" },
+    { icon: FileText, label: "Surat Pending", value: countSurat ?? 0, unit: "menunggu", tone: "bg-amber-50 text-amber-800" },
+    { icon: Store, label: "UMKM", value: countUmkm ?? 0, unit: "usaha", tone: "bg-teal-50 text-teal-800" },
+    { icon: Megaphone, label: "Berita Warga", value: countPengumuman ?? 0, unit: "postingan", tone: "bg-sky-50 text-sky-800" },
+    { icon: MessageSquare, label: "Aspirasi Baru", value: countAspirasi ?? 0, unit: "pesan", tone: "bg-rose-50 text-rose-800" },
+    { icon: Wrench, label: "Laporan Masuk", value: countLaporan ?? 0, unit: "laporan", tone: "bg-orange-50 text-orange-800" },
+  ];
+
+  return (
+    <section aria-labelledby="ringkasan-admin" className="space-y-5">
+      <h3 id="ringkasan-admin" className="sr-only">Ringkasan operasional</h3>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {stats.map((stat) => (
+          <article key={stat.label} className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <p className="text-sm font-semibold text-zinc-600">{stat.label}</p>
+              <span className={`flex size-9 items-center justify-center rounded-lg ${stat.tone}`}>
+                <stat.icon className="size-4" aria-hidden="true" />
+              </span>
+            </div>
+            <p className="tabular-nums text-3xl font-bold text-zinc-950">
+              {stat.value}
+              <span className="ml-2 text-sm font-medium text-zinc-500">{stat.unit}</span>
+            </p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+async function AdminContent({ activeTab }: { activeTab: string }) {
+  const supabase = await createAuthorizedAdminClient();
+
+  switch (activeTab) {
+    case "profil": {
+      const { data } = await supabase.from("profil_rw").select("*").limit(1).single();
+      return <ProfilRwEditor data={data} />;
+    }
+    case "profil_rt": {
+      const { data } = await supabase.from("profil_rt").select("*").order("no_rt");
+      return <ProfilRtManager data={data ?? []} />;
+    }
+    case "ticker": {
+      const { data } = await supabase.from("ticker").select("*").order("urutan");
+      return <TickerManager tickerList={data ?? []} />;
+    }
+    case "pengumuman": {
+      const { data } = await supabase.from("pengumuman").select("id, judul, konten, kategori, foto_url, created_at").order("created_at", { ascending: false }).limit(100);
+      return <PengumumanManager pengumumanList={data ?? []} />;
+    }
+    case "kegiatan": {
+      const { data } = await supabase.from("kegiatan").select("*").order("tanggal", { ascending: true }).limit(100);
+      return <KegiatanManager data={data ?? []} />;
+    }
+    case "lembaga": {
+      const { data } = await supabase.from("lembaga").select("*").order("slug");
+      return <LembagaEditor lembagaList={data ?? []} />;
+    }
+    case "fasilitas": {
+      const { data } = await supabase.from("fasilitas").select("*").order("created_at", { ascending: false }).limit(100);
+      return <FasilitasManager fasilitasList={data ?? []} />;
+    }
+    case "surat": {
+      const [{ data: suratList }, { data: profilRw }] = await Promise.all([
+        supabase.from("surat").select("id, jenis_surat, keperluan, status, catatan_admin, lampiran_url, tujuan, nomor_tiket, pdf_url, created_at, profiles(nama_lengkap, rt)").order("created_at", { ascending: false }).limit(50),
+        supabase.from("profil_rw").select("ketua_nama").limit(1).single(),
+      ]);
+      return (
+        <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm md:p-6">
+          <h3 className="mb-5 text-xl font-bold text-zinc-900">Manajemen pengajuan surat</h3>
+          <SuratTable suratList={suratList ?? []} ketuaNama={profilRw?.ketua_nama ?? "Ketua RW"} />
+        </section>
+      );
+    }
+    case "umkm": {
+      const { data } = await supabase.from("umkm").select("id, nama_usaha, kategori, deskripsi, nomor_wa, is_approved, foto_url, alamat, jam_buka, created_at, profiles(nama_lengkap, rt)").order("created_at", { ascending: false }).limit(100);
+      return <UmkmManager umkmList={data ?? []} />;
+    }
+    case "galeri": {
+      const { data } = await supabase.from("galeri").select("*").order("created_at", { ascending: false }).limit(100);
+      return <GaleriManager galeriList={data ?? []} />;
+    }
+    case "kas": {
+      const { data } = await supabase.from("kas").select("*").order("tanggal", { ascending: false }).limit(100);
+      return <KasManager kasList={data ?? []} />;
+    }
+    case "laporan": {
+      const { data } = await supabase.from("laporan_infrastruktur").select("*").order("created_at", { ascending: false }).limit(100);
+      return <LaporanManager laporanList={data ?? []} />;
+    }
+    case "aspirasi": {
+      const { data } = await supabase.from("aspirasi").select("*").order("created_at", { ascending: false }).limit(100);
+      return <AspirasiManager aspirasiList={data ?? []} />;
+    }
+    case "warga": {
+      const { data } = await supabase.from("warga").select("*").order("nama_lengkap").limit(5000);
+      return <WargaManager wargaList={data ?? []} />;
+    }
+    case "komentar": {
+      const { data } = await supabase.from("komentar_pengumuman").select("id, nama, email, isi, status, created_at, pengumuman_id, pengumuman(judul)").order("created_at", { ascending: false }).limit(200);
+      return <KomentarManager komentarList={data ?? []} />;
+    }
+    default:
+      return <Overview />;
+  }
+}
 
 export default async function AdminDashboardPage({
   searchParams,
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
-  const supabase = createAdminClient();
-
-  const resolvedParams = await searchParams;
-  const activeTab = resolvedParams?.tab || "overview";
-
-  // Ambil semua data yang dibutuhkan
-  const [
-    { count: countProfiles },
-    { count: countSurat },
-    { count: countUmkm },
-    { count: countPengumuman },
-    { count: countKegiatan },
-    { count: countAspirasi },
-    { count: countWarga },
-    { count: countLaporan },
-    { data: suratList },
-    { data: pengumumanList },
-    { data: kegiatanList },
-    { data: umkmListAdmin },
-    { data: profilRw },
-    { data: tickerList },
-    { data: lembagaList },
-    { data: fasilitasList },
-    { data: galeriList },
-    { data: kasList },
-    { data: aspirasiList },
-    { data: wargaList },
-    { data: laporanList },
-    { data: komentarListAdmin },
-    { data: profilRtList },
-  ] = await Promise.all([
-    supabase.from("profiles").select("*", { count: "exact", head: true }),
-    supabase.from("surat").select("*", { count: "exact", head: true }).eq("status", "pending"),
-    supabase.from("umkm").select("*", { count: "exact", head: true }),
-    supabase.from("pengumuman").select("*", { count: "exact", head: true }),
-    supabase.from("kegiatan").select("*", { count: "exact", head: true }),
-    supabase.from("aspirasi").select("*", { count: "exact", head: true }).eq("status", "masuk"),
-    supabase.from("warga").select("*", { count: "exact", head: true }),
-    supabase.from("laporan_infrastruktur").select("*", { count: "exact", head: true }).eq("status", "masuk"),
-    supabase.from("surat").select(`id, jenis_surat, keperluan, status, catatan_admin, lampiran_url, tujuan, nomor_tiket, pdf_url, created_at, profiles ( nama_lengkap, rt )`).order("created_at", { ascending: false }).limit(50),
-    supabase.from("pengumuman").select("id, judul, konten, kategori, foto_url, created_at").order("created_at", { ascending: false }),
-    supabase.from("kegiatan").select("*").order("tanggal", { ascending: true }),
-    supabase.from("umkm").select(`id, nama_usaha, kategori, deskripsi, nomor_wa, is_approved, foto_url, alamat, jam_buka, created_at, profiles ( nama_lengkap, rt )`).order("created_at", { ascending: false }),
-    supabase.from("profil_rw").select("*").limit(1).single(),
-    supabase.from("ticker").select("*").order("urutan", { ascending: true }),
-    supabase.from("lembaga").select("*").order("slug", { ascending: true }),
-    supabase.from("fasilitas").select("*").order("created_at", { ascending: false }),
-    supabase.from("galeri").select("*").order("created_at", { ascending: false }),
-    supabase.from("kas").select("*").order("tanggal", { ascending: false }).limit(100),
-    supabase.from("aspirasi").select("*").order("created_at", { ascending: false }),
-    supabase.from("warga").select("*").order("nama_lengkap", { ascending: true }),
-    supabase.from("laporan_infrastruktur").select("*").order("created_at", { ascending: false }),
-    supabase.from("komentar_pengumuman").select('id, nama, email, isi, status, created_at, pengumuman_id, pengumuman(judul)').order("created_at", { ascending: false }),
-    supabase.from("profil_rt").select("*").order("no_rt", { ascending: true }),
-  ]);
-
-  const stats = [
-    { icon: Users, label: "Total Warga", value: countWarga ?? 0, unit: "jiwa", color: "blue" },
-    { icon: FileText, label: "Surat Pending", value: countSurat ?? 0, unit: "menunggu", color: "amber" },
-    { icon: Store, label: "UMKM", value: countUmkm ?? 0, unit: "usaha", color: "emerald" },
-    { icon: Megaphone, label: "Berita Warga", value: countPengumuman ?? 0, unit: "postingan", color: "purple" },
-    { icon: MessageSquare, label: "Aspirasi Baru", value: countAspirasi ?? 0, unit: "pesan", color: "rose" },
-    { icon: Wrench, label: "Laporan Masuk", value: countLaporan ?? 0, unit: "laporan", color: "indigo" },
-  ];
-
-  const colorMap: Record<string, { bg: string; text: string; icon: string }> = {
-    blue: { bg: "bg-blue-50", text: "text-blue-600", icon: "bg-blue-100 text-blue-600" },
-    amber: { bg: "bg-amber-50", text: "text-amber-600", icon: "bg-amber-100 text-amber-600" },
-    emerald: { bg: "bg-emerald-50", text: "text-emerald-600", icon: "bg-emerald-100 text-emerald-600" },
-    purple: { bg: "bg-purple-50", text: "text-purple-600", icon: "bg-purple-100 text-purple-600" },
-    rose: { bg: "bg-rose-50", text: "text-rose-600", icon: "bg-rose-100 text-rose-600" },
-    indigo: { bg: "bg-indigo-50", text: "text-indigo-600", icon: "bg-indigo-100 text-indigo-600" },
-  };
+  const { tab } = await searchParams;
+  const validTabs = new Set<string>(MENU_ITEMS.map((item) => item.key));
+  const activeTab = tab && validTabs.has(tab) ? tab : "overview";
 
   return (
-    <div className="space-y-8 text-zinc-900">
-      {/* Header */}
-      <div>
-        <h2 className="text-3xl font-black mb-1">Dashboard Pengurus RW</h2>
-        <p className="text-zinc-500 font-medium">Berikut adalah ringkasan data dan aktivitas terbaru Portal Guyub RW 10.</p>
-      </div>
-
-      {/* Tab Navigation */}
-      <AdminTabs menuItems={MENU_ITEMS} activeTab={activeTab} />
-
-      {/* ── OVERVIEW TAB ── */}
-      {activeTab === "overview" && (
-        <div className="space-y-8">
-          {/* Stat Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {stats.map((stat) => {
-              const c = colorMap[stat.color];
-              return (
-                <div key={stat.label} className={`${c.bg} p-6 rounded-3xl border border-zinc-200/60 shadow-sm hover:shadow-md transition-shadow`}>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className={`${c.icon} p-3 rounded-xl`}>
-                      <stat.icon className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-base font-bold text-zinc-700">{stat.label}</h3>
-                  </div>
-                  <p className={`text-4xl font-black ${c.text}`}>
-                    {stat.value}
-                    <span className="text-sm text-zinc-400 font-medium ml-2">{stat.unit}</span>
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ── PROFIL RW TAB ── */}
-      {activeTab === "profil" && (
-        <ProfilRwEditor data={profilRw} />
-      )}
-
-      {/* ── PROFIL RT TAB ── */}
-      {activeTab === "profil_rt" && (
-        <ProfilRtManager data={profilRtList ?? []} />
-      )}
-
-      {/* ── TICKER TAB ── */}
-      {activeTab === "ticker" && (
-        <TickerManager tickerList={tickerList ?? []} />
-      )}
-
-      {/* ── SURAT TAB ── */}
-      {activeTab === "surat" && (
-        <div className="bg-white p-6 md:p-8 rounded-3xl border-2 border-zinc-200 shadow-sm">
-          <div className="flex items-center gap-2 mb-6">
-            <FileText className="w-5 h-5 text-emerald-500" />
-            <h3 className="text-xl font-black text-zinc-800">Manajemen Pengajuan Surat</h3>
-          </div>
-          <SuratTable suratList={suratList ?? []} ketuaNama={profilRw?.ketua_nama ?? "Ketua RW"} />
-        </div>
-      )}
-
-      {/* ── UMKM TAB ── */}
-      {activeTab === "umkm" && (
-        <UmkmManager umkmList={umkmListAdmin ?? []} />
-      )}
-
-      {/* ── KEGIATAN TAB ── */}
-      {activeTab === "kegiatan" && (
-        <KegiatanManager data={kegiatanList ?? []} />
-      )}
-
-      {/* ── PENGUMUMAN TAB ── */}
-      {activeTab === "pengumuman" && (
-        <PengumumanManager pengumumanList={pengumumanList ?? []} />
-      )}
-
-      {/* ── LEMBAGA TAB ── */}
-      {activeTab === "lembaga" && (
-        <LembagaEditor lembagaList={lembagaList ?? []} />
-      )}
-
-      {/* ── FASILITAS TAB ── */}
-      {activeTab === "fasilitas" && (
-        <FasilitasManager fasilitasList={fasilitasList ?? []} />
-      )}
-
-      {/* ── GALERI TAB ── */}
-      {activeTab === "galeri" && (
-        <GaleriManager galeriList={galeriList ?? []} />
-      )}
-
-      {/* ── KAS TAB ── */}
-      {activeTab === "kas" && (
-        <KasManager kasList={kasList ?? []} />
-      )}
-
-      {/* ── LAPORAN TAB ── */}
-      {activeTab === "laporan" && (
-        <LaporanManager laporanList={laporanList ?? []} />
-      )}
-
-      {/* ── ASPIRASI TAB ── */}
-      {activeTab === "aspirasi" && (
-        <AspirasiManager aspirasiList={aspirasiList ?? []} />
-      )}
-
-      {/* ── WARGA TAB ── */}
-      {activeTab === "warga" && (
-        <WargaManager wargaList={wargaList ?? []} />
-      )}
-
-      {/* ── KOMENTAR TAB ── */}
-      {activeTab === "komentar" && (
-        <KomentarManager komentarList={komentarListAdmin ?? []} />
-      )}
+    <div className="space-y-6 text-zinc-900">
+      <header>
+        <h2 className="text-balance text-2xl font-bold text-zinc-950 md:text-3xl">Dashboard pengurus RW</h2>
+        <p className="mt-1 max-w-2xl text-pretty text-sm text-zinc-600 md:text-base">
+          Kelola layanan warga dan lihat pekerjaan yang perlu ditindaklanjuti.
+        </p>
+      </header>
+      <AdminTabs menuItems={[...MENU_ITEMS]} activeTab={activeTab} />
+      <AdminContent activeTab={activeTab} />
     </div>
   );
 }

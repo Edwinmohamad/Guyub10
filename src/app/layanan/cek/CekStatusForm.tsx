@@ -4,11 +4,20 @@ import { useState } from "react";
 import { Search, FileText, CheckCircle2, Clock, XCircle, Download } from "lucide-react";
 import { cekStatusSurat } from "./actions";
 
+type SuratStatus = {
+  status: string;
+  jenis_surat: string;
+  catatan_admin?: string;
+  pdf_url?: string;
+  created_at: string;
+  profiles?: { nama_lengkap: string } | { nama_lengkap: string }[];
+};
+
 export default function CekStatusForm() {
   const [nomorTiket, setNomorTiket] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<SuratStatus | null>(null);
 
   const handleCek = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,8 +29,8 @@ export default function CekStatusForm() {
 
     const res = await cekStatusSurat(nomorTiket);
 
-    if (res.error) {
-      setError(res.error);
+    if (res.error || !res.data) {
+      setError(res.error || "Data surat tidak ditemukan.");
     } else {
       setResult(res.data);
     }
@@ -81,7 +90,7 @@ export default function CekStatusForm() {
             <div className="flex-1 space-y-6">
               <div>
                 <p className="text-sm font-bold text-muted-foreground mb-1 uppercase tracking-wider">Pemohon</p>
-                <h3 className="text-xl font-black text-foreground">{result.profiles?.nama_lengkap}</h3>
+                <h3 className="text-xl font-black text-foreground">{Array.isArray(result.profiles) ? result.profiles[0]?.nama_lengkap : result.profiles?.nama_lengkap}</h3>
               </div>
               
               <div>
@@ -134,7 +143,7 @@ export default function CekStatusForm() {
               {result.status === 'diproses' && (
                 <>
                   <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mb-4 text-amber-600">
-                    <Clock className="w-10 h-10 animate-pulse" />
+                    <Clock className="w-10 h-10" />
                   </div>
                   <h4 className="text-2xl font-black text-amber-700 mb-2">Diproses</h4>
                   <p className="text-sm font-medium text-muted-foreground">Sedang ditandatangani oleh Ketua RT/RW.</p>

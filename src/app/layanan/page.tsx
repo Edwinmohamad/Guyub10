@@ -1,12 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight, FileText, CheckCircle2, ArrowRight, ArrowLeft } from "lucide-react";
+import { FileText, CheckCircle2, ArrowRight, ArrowLeft } from "lucide-react";
+import PublicPageHeader from "@/components/layout/PublicPageHeader";
 import { submitSurat, getKetuaNames } from "./actions";
-import { pdf } from '@react-pdf/renderer';
-import SuratPengantarPDF from '@/components/pdf/SuratPengantarPDF';
 
 type FormDataState = {
   jenis: string;
@@ -23,7 +21,6 @@ export default function LayananSuratPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [nomorTiket, setNomorTiket] = useState("");
   const [formData, setFormData] = useState<FormDataState>({
     jenis: "",
     namaLengkap: "",
@@ -47,7 +44,7 @@ export default function LayananSuratPage() {
       .catch(() => {/* logo optional */});
   }, []);
 
-  const updateField = (field: keyof FormDataState, value: any) => {
+  const updateField = <K extends keyof FormDataState>(field: K, value: FormDataState[K]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -102,6 +99,10 @@ export default function LayananSuratPage() {
       const names = await getKetuaNames(formData.domisiliRt);
 
       // 2. Buat PDF
+      const [{ pdf }, { default: SuratPengantarPDF }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("@/components/pdf/SuratPengantarPDF"),
+      ]);
       const doc = <SuratPengantarPDF data={{
         nama: formData.namaLengkap,
         nik: formData.nik,
@@ -125,6 +126,7 @@ export default function LayananSuratPage() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
 
       // 4. Simpan ke database
       const fd = new FormData();
@@ -140,7 +142,6 @@ export default function LayananSuratPage() {
         setErrorMessage(result.error);
         setIsSubmitting(false);
       } else {
-        setNomorTiket(result.nomorTiket || "TKT-0000");
         setIsSuccess(true);
       }
     } catch (err) {
@@ -188,41 +189,10 @@ export default function LayananSuratPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      {/* Hero Wallpaper */}
-      <section className="relative overflow-hidden min-h-[240px]">
-        <div className="absolute inset-0">
-          <Image
-            src="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=1600&q=80"
-            alt="Layanan Surat Background"
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-center"
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/80 via-primary/70 to-[rgba(13,33,25,0.93)]" />
-        <div className="container mx-auto px-4 max-w-3xl py-16 relative z-10">
-          <div className="flex items-center text-sm font-bold text-white/80 mb-6">
-            <Link href="/" className="hover:text-white transition-colors">Beranda</Link>
-            <ChevronRight className="h-4 w-4 mx-2" />
-            <span className="text-white">Layanan Surat</span>
-          </div>
-          <div className="flex items-center gap-4 mb-3">
-            <div className="bg-white/10 p-3 rounded-2xl border border-white/20 backdrop-blur-sm">
-              <FileText className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-3xl md:text-5xl font-black text-white leading-tight" style={{ fontFamily: "var(--font-bitter)" }}>
-              Pengajuan Surat
-            </h1>
-          </div>
-          <p className="text-white/90 text-lg font-medium">
-            Ajukan surat pengantar secara online, mudah dan cepat.
-          </p>
-        </div>
-      </section>
+      <PublicPageHeader icon={FileText} label="Layanan surat" title="Buat surat pengantar" description="Isi data dalam tiga langkah, unduh PDF, lalu bawa ke pengurus RT atau RW untuk pengesahan." action={{ href: "/layanan/cek", label: "Cek status surat" }} />
 
-      <section className="container mx-auto px-4 max-w-3xl py-12">
-        <div className="bg-white rounded-2xl p-6 md:p-10 border border-border shadow-md">
+      <section className="mx-auto w-full max-w-3xl px-5 py-10 md:px-8 md:py-14">
+        <div className="rounded-xl border border-border bg-white p-5 md:p-8">
           
           {/* Progress Bar */}
           <div className="mb-10">
