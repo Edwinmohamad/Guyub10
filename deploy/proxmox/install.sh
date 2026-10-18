@@ -51,7 +51,7 @@ FREE_DISK_MB=$(df -Pm "$STORAGE_PATH" | awk 'NR==2 {print $4}')
 (( FREE_DISK_MB >= 20480 )) || fail 'Storage membutuhkan ruang kosong minimal 20 GB.'
 TEMPLATE_PATH=$(pvesm path "$TEMPLATE")
 [[ -r "$TEMPLATE_PATH" ]] || fail "Template $TEMPLATE belum tersedia."
-CTID=$(pvesh get /cluster/nextid --output-format json)
+CTID=$(pvesh get /cluster/nextid --output-format json | python3 -c 'import json,sys; value=json.load(sys.stdin); text=str(value); assert text.isdecimal(); print(text)')
 [[ "$CTID" =~ ^[1-9][0-9]*$ ]] || fail 'Tidak mendapatkan ID guest yang valid.'
 if pct status "$CTID" >/dev/null 2>&1 || qm status "$CTID" >/dev/null 2>&1; then
   fail "ID $CTID sudah terpakai; tidak ada guest yang akan ditimpa."
@@ -145,10 +145,6 @@ StateDirectory=guyub10
 StateDirectoryMode=0700
 UMask=0077
 NoNewPrivileges=true
-PrivateTmp=true
-ProtectHome=true
-ProtectSystem=strict
-ReadWritePaths=/opt/guyub10/.next /var/lib/guyub10
 [Install]
 WantedBy=multi-user.target
 UNIT
