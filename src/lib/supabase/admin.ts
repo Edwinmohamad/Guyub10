@@ -5,6 +5,8 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js'
  * Ini BYPASS semua RLS policies — gunakan HANYA di server actions admin.
  */
 export function createAdminClient() {
+  blockLegacy();
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -21,3 +23,5 @@ export function createAdminClient() {
     },
   })
 }
+
+function blockLegacy(): void { throw new Error('Integrasi Supabase dinonaktifkan pada branch simulator lokal.'); }

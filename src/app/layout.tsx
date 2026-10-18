@@ -1,49 +1,26 @@
+import { cookies } from "next/headers";
 import type { Metadata } from "next";
-import { Roboto, Bitter, Plus_Jakarta_Sans } from "next/font/google";
+import "@fontsource-variable/plus-jakarta-sans";
 import "./globals.css";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
-import BackButton from "@/components/ui/BackButton";
-
-const roboto = Roboto({
-  variable: "--font-roboto",
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-});
-
-const bitter = Bitter({
-  variable: "--font-bitter",
-  subsets: ["latin"],
-  weight: ["400", "600", "700", "800"],
-});
-
-const jakarta = Plus_Jakarta_Sans({
-  variable: "--font-jakarta",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-});
-
+import "./os.css";
 export const metadata: Metadata = {
-  title: "Guyub | Portal Digital RW 10 — Layanan, Informasi & UMKM",
-  description:
-    "Portal resmi RW 10 Desa Cicadas. Akses layanan surat pengantar online, direktori UMKM warga, papan informasi publik, dan laporan keuangan transparan.",
+  title: "Guyub10 — Digital Operating System RW 10",
+  description: "Satu Lingkungan. Satu Portal. Semua Terhubung.",
+  robots: { index: false, follow: false },
 };
-
-export default function RootLayout({
+export default async function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
+  await cookies();
   return (
-    <html
-      lang="id"
-      className={`${roboto.variable} ${bitter.variable} ${jakarta.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col bg-background text-foreground">
-        <Navbar />
-        <main className="flex-1 flex flex-col">{children}</main>
-        <BackButton />
-        <Footer />
+    <html lang="id">
+      <body>
+        <a className="skip-link" href="#main">
+          Lewati ke konten
+        </a>
+        {children}
       </body>
     </html>
   );

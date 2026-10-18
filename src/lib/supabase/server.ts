@@ -2,6 +2,8 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 export async function createClient() {
+  blockLegacy();
+
   const cookieStore = await cookies()
 
   return createServerClient(
@@ -27,3 +29,5 @@ export async function createClient() {
     }
   )
 }
+
+function blockLegacy(): void { throw new Error('Integrasi Supabase dinonaktifkan pada branch simulator lokal.'); }
