@@ -50,3 +50,10 @@ Pekerjaan berikutnya: unggah lampiran dengan validasi dan otorisasi unduhan.
 - [x] Installer satu entry point untuk guest baru, pemeriksaan storage/resource/jaringan, Node dengan checksum, build satu worker, systemd, dan smoke check lokal.
 - [x] Sintaks Bash, ShellCheck, serta build rendah paralelisme diverifikasi di cloud.
 - [ ] Menjalankan dan memverifikasi installer pada Proxmox pengguna; belum ada akses langsung ke host.
+
+### Perbaikan installer setelah percobaan Proxmox
+
+- [x] Memperbaiki pewarisan umask 077 ke pct create yang membatasi akses ekstraksi unprivileged.
+- [x] Melewati ID/direktori/disk/log sisa tanpa menghapus atau mengubah izinnya.
+- [x] Tiga tes regresi installer, bash -n, dan ShellCheck lulus.
+- [ ] Pengujian ulang di Proxmox pengguna; instalasi aplikasi belum terkonfirmasi berhasil.

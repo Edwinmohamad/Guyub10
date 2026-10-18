@@ -53,9 +53,13 @@ TEMPLATE_PATH=$(pvesm path "$TEMPLATE")
 [[ -r "$TEMPLATE_PATH" ]] || fail "Template $TEMPLATE belum tersedia."
 CTID=$(pvesh get /cluster/nextid --output-format json | python3 -c 'import json,sys; value=json.load(sys.stdin); text=str(value); assert text.isdecimal(); print(text)')
 [[ "$CTID" =~ ^[1-9][0-9]*$ ]] || fail 'Tidak mendapatkan ID guest yang valid.'
-if pct status "$CTID" >/dev/null 2>&1 || qm status "$CTID" >/dev/null 2>&1; then
-  fail "ID $CTID sudah terpakai; tidak ada guest yang akan ditimpa."
-fi
+# BEGIN GUEST_ID_SELECTION
+while [[ -e "/var/lib/lxc/$CTID" || -L "/var/lib/lxc/$CTID" || -e "$STORAGE_PATH/images/$CTID" || -e "/root/guyub10-install-${CTID}.log" ]] || pct status "$CTID" >/dev/null 2>&1 || qm status "$CTID" >/dev/null 2>&1; do
+  printf 'Melewati ID %s: ada konfigurasi, direktori, disk, atau log sebelumnya.\n' "$CTID"
+  CTID=$((CTID + 1))
+  (( CTID <= 999999999 )) || fail 'Tidak menemukan ID guest kosong.'
+done
+# END GUEST_ID_SELECTION
 SOURCE_URL="https://github.com/Edwinmohamad/Guyub10/archive/${SOURCE_COMMIT}.zip"
 curl --proto '=https' --tlsv1.2 -fL --retry 3 --connect-timeout 20 --max-time 180 "$SOURCE_URL" -o "$WORKDIR/source.zip"
 python3 - "$WORKDIR/source.zip" <<'PY'
@@ -78,7 +82,14 @@ LOG="/root/guyub10-install-${CTID}.log"
 [[ ! -e "$LOG" ]] || fail "File log $LOG sudah ada; simpan log tersebut sebelum mencoba kembali."
 exec > >(tee "$LOG") 2>&1
 printf '[2/7] Membuat LXC baru %s, tanpa mengubah guest lain...\n' "$CTID"
-pct create "$CTID" "$TEMPLATE" --hostname "guyub10-test-${CTID}" --ostype debian --rootfs "${STORAGE}:16" --cores 1 --memory 1536 --swap 1024 --net0 name=eth0,bridge=vmbr0,ip=dhcp --unprivileged 1 --onboot 0
+# BEGIN GUEST_CREATION
+# The mapped extraction uid must traverse pct-created directories. Keep the
+# private host umask, but do NOT pass it to pct's directory creation.
+(
+  umask 022
+  pct create "$CTID" "$TEMPLATE" --hostname "guyub10-test-${CTID}" --ostype debian --rootfs "${STORAGE}:16" --cores 1 --memory 1536 --swap 1024 --net0 name=eth0,bridge=vmbr0,ip=dhcp --unprivileged 1 --onboot 0
+)
+# END GUEST_CREATION
 CREATED=1
 pct start "$CTID"
 printf '[3/7] Menunggu jaringan DHCP di dalam LXC...\n'
@@ -94,6 +105,7 @@ pct push "$CTID" "$WORKDIR/source.zip" /tmp/guyub10-source.zip
 printf '[4/7] Memasang Node terverifikasi dan dependensi aplikasi di LXC...\n'
 pct exec "$CTID" -- env NODE_VERSION="$NODE_VERSION" SOURCE_SHA256="$SOURCE_SHA256" bash -s <<'GUEST'
 set -Eeuo pipefail
+umask 022
 trap 'printf "Langkah di dalam LXC gagal pada baris %s.\n" "$LINENO" >&2' ERR
 export DEBIAN_FRONTEND=noninteractive
 apt-get -o Acquire::Retries=3 update

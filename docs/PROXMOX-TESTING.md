@@ -25,3 +25,9 @@ Sintaks host dan skrip guest yang tertanam diperiksa dengan bash -n dan ShellChe
 ## GitHub
 
 Source diunduh dari GitHub agar instalasi satu langkah tidak memerlukan upload ZIP. Tidak ada token atau deploy key yang diminta. Ini bukan sinkronisasi Git/CI/CD otomatis. Koneksi pengembangan dan mekanisme update GitHub dapat disiapkan setelah instalasi berhasil.
+
+## Perbaikan kegagalan ekstraksi unprivileged
+
+Percobaan pada host pengguna gagal ketika tar berjalan sebagai UID terpetakan 100000: direktori /var/lib/lxc/104 dan rootfs berizin 700 milik root host. Installer sebelumnya meneruskan umask 077 ke pct create. Versi perbaikan memakai subshell umask 022 hanya untuk pembuatan guest dan menetapkan umask 022 pada setup di guest; log host dan temporary directory tetap privat.
+
+Pemilihan ID sekarang melewati direktori LXC, direktori image storage, dan log instalasi yang tersisa, selain konfigurasi guest. Sisa ID 104 tidak dihapus, diubah izinnya, atau digunakan ulang. Tiga tes regresi di tests/proxmox-installer.py memeriksa pemilihan ID, pelestarian sisa direktori, izin direktori 755 selama create, serta pemulihan umask host 077. Tes menggunakan stub pct dan direktori sementara; bukan klaim bahwa instalasi penuh pada Proxmox telah berhasil. Jalankan `python3 tests/proxmox-installer.py` untuk mengulang pemeriksaan tersebut.
