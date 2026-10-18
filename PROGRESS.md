@@ -44,3 +44,9 @@ Pekerjaan berikutnya: unggah lampiran dengan validasi dan otorisasi unduhan.
 - [x] Seluruh tes database menggunakan PGlite lokal; skema di `database/local/001_os_schema.sql`.
 - [x] Fetch server dibatasi loopback, redirect fetch ditolak, dan gambar eksternal dinonaktifkan.
 - [x] Tes khusus memverifikasi penolakan koneksi eksternal sebelum jaringan dipanggil.
+
+### Installer pengujian Proxmox
+
+- [x] Installer satu entry point untuk guest baru, pemeriksaan storage/resource/jaringan, Node dengan checksum, build satu worker, systemd, dan smoke check lokal.
+- [x] Sintaks Bash, ShellCheck, serta build rendah paralelisme diverifikasi di cloud.
+- [ ] Menjalankan dan memverifikasi installer pada Proxmox pengguna; belum ada akses langsung ke host.
