@@ -23,7 +23,7 @@ npm run build
 npm run test:e2e
 ```
 
-Build menghasilkan artefak lokal, tidak melakukan deployment. Untuk memeriksa artefak, hentikan dev server lalu jalankan `npm start -- --hostname 127.0.0.1`. Playwright menggunakan `/usr/bin/chromium`; sesuaikan executablePath dalam konfigurasi untuk mesin lain. Tes browser menambahkan data sintetis dan audit ke penyimpanan lokal. Jangan arahkan pengujian ke produksi.
+Build menghasilkan artefak lokal, tidak melakukan deployment. Untuk memeriksa artefak, hentikan dev server lalu jalankan `npm start -- --hostname 127.0.0.1`. Playwright memakai `/usr/bin/chromium` bila tersedia, atau browser yang diunduh melalui `npx playwright install chromium`. Override executable dapat diberikan melalui GUYUB_CHROMIUM_PATH. Tes browser menambahkan data sintetis dan audit ke penyimpanan lokal. Jangan arahkan pengujian ke produksi.
 
 ## Arsitektur dan data
 
@@ -32,8 +32,8 @@ Build menghasilkan artefak lokal, tidak melakukan deployment. Untuk memeriksa ar
 - `src/lib/local/model.ts` menjadi kebijakan RBAC dan transisi workflow. Kebijakan yang sama dipanggil API; menyembunyikan tombol bukan kontrol keamanan.
 - `src/app/api/local/[...path]` menangani sesi, pendaftaran, data modul, verifikasi, pencarian terotorisasi, pratinjau kamera statis, audit, dan PDF contoh.
 - Penyimpanan `.local-data/database.json` dibuat otomatis dengan identitas palsu, kata sandi scrypt + salt, token sesi yang di-hash, dan penulisan atomik berurutan dengan penguncian file antarproses (proper-lockfile). File/direktori diabaikan Git. Desain ini untuk satu proses Node lokal, bukan multi-instance atau produksi.
-- Seluruh helper Supabase lama diblokir sebelum membuat koneksi. Rute lama masih ada sebagai referensi, tetapi tidak menjadi backend simulator.
-- `supabase/local/001_os_schema.sql` merupakan skema PostgreSQL lokal terpisah dengan organisasi, peran, profil privat, rumah tangga, anggota keluarga, registry modul, audit, dan RLS. Migrasi dapat dijalankan berulang dan diuji di PostgreSQL WASM (PGlite). Simulator berjalan dengan JSON; tidak ada klaim bahwa migrasi ini telah diterapkan di Supabase.
+- Seluruh helper Supabase lama hanya melempar error; tidak memuat SDK saat runtime, membaca kredensial, atau membuat koneksi. Rute lama masih ada sebagai referensi, tetapi tidak menjadi backend simulator.
+- `database/local/001_os_schema.sql` merupakan skema PostgreSQL lokal terpisah dengan organisasi, peran, profil privat, rumah tangga, anggota keluarga, registry modul, audit, dan RLS. Migrasi dapat dijalankan berulang dan diuji di PostgreSQL WASM (PGlite). Simulator berjalan dengan JSON; tidak ada klaim bahwa migrasi ini telah diterapkan di Supabase.
 - Tabel lama `warga`, `surat`, `kas`, `fasilitas`, `umkm`, `pengumuman` tidak diubah. Dokumen SQL mencatat pemetaan untuk adapter integrasi di fase terpisah. Namespace lokal menghindari perubahan atau duplikasi dalam tabel produksi.
 
 ## Halaman
@@ -101,3 +101,9 @@ Masuk sebagai pengurus RW atau RT, buka `/residents`, lalu pilih **Rumah tangga 
 Pemindahan mempertahankan ID anggota dan data pribadinya. Kepala keluarga yang meninggalkan anggota lain harus memiliki pengganti yang sah. Rumah tangga kosong tidak mempunyai kepala keluarga. Admin RT hanya dapat melihat dan mengubah RT sendiri; RW mencakup semua empat RT. Tidak ada penghapusan permanen anggota: gunakan status MOVED atau DECEASED sesuai data sintetis pengujian.
 
 API privat `/api/local/households` memeriksa peran, status akun, RT asal/tujuan, keunikan NIK anggota, tanggal lahir dan penanda boolean. Setiap perubahan menambahkan audit. Dataset rumah tangga tidak masuk dalam API atau halaman publik. Endpoint memakai transaksi penyimpanan yang sama dengan sesi dan modul lain; penguncian file mencegah worker API/render saling menimpa data. Penyimpanan ini tetap untuk simulator lokal, bukan basis data produksi.
+
+## Larangan Supabase pada seluruh pengujian
+
+Semua pengujian memakai JSON lokal atau PostgreSQL WASM PGlite dalam proses lokal. Tidak ada Supabase Cloud, Supabase CLI, emulator Supabase, atau layanan Auth/Storage Supabase. Skema tes berada di `database/local`, bukan folder migrasi Supabase. Tipe SDK pada berkas kompatibilitas lama hanya dipakai saat pemeriksaan TypeScript dan dihapus dari JavaScript runtime.
+
+`src/instrumentation.ts` membungkus fetch server: hanya HTTP(S) ke localhost/127.0.0.1/::1 yang diterima, dan redirect fetch ditolak agar tidak beralih ke backend eksternal. Optimisasi gambar jarak jauh dinonaktifkan. Tes guard memakai fetch mock sehingga URL Supabase dalam tes penolakan tidak pernah dihubungi. Tes browser memeriksa portal publik dan halaman keluarga tanpa permintaan ke origin eksternal. Instalasi paket npm/Chromium masih memerlukan unduhan dependensi awal; bukan koneksi ke layanan Supabase.

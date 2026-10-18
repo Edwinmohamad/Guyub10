@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test": "tsx --test tests/*.test.ts && node --conditions=react-server --import tsx --test tests/store.concurrent.ts",
     "test:e2e": "playwright test",
-    "lint:local": "eslint src/components/os src/lib/local src/app/os src/app/api/local src/middleware.ts src/app/layout.tsx tests playwright.config.ts"
+    "lint:local": "eslint src/components/os src/lib/local src/app/os src/app/api/local src/middleware.ts src/app/layout.tsx tests playwright.config.ts src/instrumentation.ts next.config.ts src/lib/supabase/client.ts src/lib/supabase/server.ts src/lib/supabase/admin.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

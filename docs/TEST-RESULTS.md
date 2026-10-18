@@ -28,3 +28,11 @@ Tidak ada pengujian, migrasi, atau modifikasi terhadap layanan produksi. Belum a
 - Penyimpanan kini memakai proper-lockfile agar render/API dan proses lokal independen tidak saling menimpa perubahan JSON. Ini tidak mengubah batasan simulator menjadi layanan produksi.
 
 Tidak diperlukan tindakan manual atau kredensial baru. Unggah lampiran dan item roadmap lain yang belum dicentang tetap belum dikerjakan pada tahap keluarga ini.
+
+## Pengujian tanpa Supabase
+
+- Build lokal dan lint kode lokal lulus.
+- 21 tes domain/RLS/guard jaringan ditambah 1 tes penyimpanan serentak lulus (22 total).
+- 8/8 skenario browser lulus pada hasil build lokal. Skenario baru memeriksa tidak adanya permintaan browser ke origin eksternal dan penolakan URL gambar eksternal.
+- Helper Supabase lama sekarang hanya melempar error tanpa SDK runtime, pembacaan kredensial, atau URL fallback. Tes guard server menggunakan fetch mock dan membuktikan URL eksternal ditolak sebelum transport dipanggil.
+- Pengujian database memakai PGlite lokal dan skema `database/local/001_os_schema.sql`. Tidak memakai Supabase Cloud, CLI, Auth, Storage, atau emulator Supabase.

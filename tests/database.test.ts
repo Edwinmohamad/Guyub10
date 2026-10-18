@@ -6,7 +6,7 @@ test("additive local schema is repeatable and RLS denies cross-RT and anonymous 
   const db = new PGlite();
   try {
     const sql = await readFile(
-      new URL("../supabase/local/001_os_schema.sql", import.meta.url),
+      new URL("../database/local/001_os_schema.sql", import.meta.url),
       "utf8",
     );
     await db.exec(sql);

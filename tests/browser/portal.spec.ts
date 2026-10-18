@@ -359,3 +359,35 @@ test("family workspace creates household, edits and moves members, and enforces 
   await login(request, "warga01");
   expect((await request.get("/api/local/households")).status()).toBe(403);
 });
+test("public and member testing uses no external network or Supabase", async ({
+  page,
+  request,
+}) => {
+  const external: string[] = [];
+  await page.context().route("**/*", (route) => {
+    const url = new URL(route.request().url());
+    if (["http:", "https:"].includes(url.protocol) && url.origin !== origin) {
+      external.push(url.origin);
+      return route.abort();
+    }
+    return route.continue();
+  });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(
+    "Satu lingkungan",
+  );
+  await page.goto("/login");
+  await page.getByLabel("Pilih akun pengujian").selectOption("rw@guyub.test");
+  await page.getByLabel("Kata sandi", { exact: true }).fill("Guyub10-Lokal!");
+  await page.getByRole("button", { name: "Masuk", exact: true }).click();
+  await expect(page).toHaveURL(/command/);
+  await page.goto("/residents");
+  await expect(
+    page.getByRole("heading", { name: "Rumah tangga & keluarga" }),
+  ).toBeVisible();
+  expect(external).toEqual([]);
+  const proxy = await request.get(
+    "/_next/image?url=https%3A%2F%2Fexample.supabase.co%2Fimage.png&w=640&q=75",
+  );
+  expect(proxy.status()).toBe(400);
+});

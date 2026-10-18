@@ -37,3 +37,10 @@ Lihat `docs/LOCAL-DEVELOPMENT.md` dan `docs/TEST-RESULTS.md`. Simulator ini tida
 Rumah tangga sekarang menjadi koleksi tersendiri dalam database JSON dan diinisialisasi sekali dari profil sintetis yang sudah ada tanpa mengubah akun. Anggota keluarga tidak harus mempunyai akun login. Identitas anggota dipertahankan saat dipindahkan; pemindahan kepala keluarga memerlukan pengganti jika masih ada anggota. Admin RT dibatasi RT sendiri, pengurus RW dapat memindahkan antar-RT. Tidak ada perubahan atau migrasi pada Supabase produksi.
 
 Pekerjaan berikutnya: unggah lampiran dengan validasi dan otorisasi unduhan.
+
+### Ketentuan pengujian tanpa Supabase
+
+- [x] Tidak membuat klien Supabase atau membaca kredensial pada runtime lokal.
+- [x] Seluruh tes database menggunakan PGlite lokal; skema di `database/local/001_os_schema.sql`.
+- [x] Fetch server dibatasi loopback, redirect fetch ditolak, dan gambar eksternal dinonaktifkan.
+- [x] Tes khusus memverifikasi penolakan koneksi eksternal sebelum jaringan dipanggil.
