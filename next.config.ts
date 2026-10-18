@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [],
   },
   experimental: {
+    cpus: process.env.GUYUB_BUILD_CPUS === "1" ? 1 : undefined,
     serverActions: {
       bodySizeLimit: "10mb",
     },
